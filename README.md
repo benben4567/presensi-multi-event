@@ -25,10 +25,10 @@ Aplikasi web **presensi berbasis QR Code** untuk event multi-hari. Dirancang unt
 
 ## Screenshot
 
-Dashboard Admin
+Dashboard Admin. 
 ![Admin Dashboard](https://i.ibb.co.com/JFKqNzd1/Dashboard-Presensi.png)
 
-Scan QR
+Scan QR. 
 ![Operator Scan](https://i.ibb.co.com/5xz3nL5v/Scan-QR-Presensi-03-02-2026-03-02-PM.png)
 
 ---

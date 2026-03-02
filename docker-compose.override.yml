@@ -1,0 +1,25 @@
+# Development overrides — di-merge otomatis oleh Docker Compose saat `docker-compose up`.
+# Tidak perlu flag tambahan untuk development.
+services:
+  php:
+    build:
+      target: development
+    volumes:
+      - ./:/var/www/html
+      # Named volume untuk vendor mencegah konflik dengan node_modules / vendor di host
+      - vendor_dev:/var/www/html/vendor
+      - ./docker/php/php.ini:/usr/local/etc/php/conf.d/99-custom.ini
+
+  nginx:
+    ports:
+      - "${APP_PORT:-8080}:80"
+    volumes:
+      - ./:/var/www/html
+
+  mysql:
+    ports:
+      - "${MYSQL_HOST_PORT:-3306}:3306"
+
+volumes:
+  vendor_dev:
+    driver: local

@@ -1,0 +1,30 @@
+# Production overrides — gunakan dengan:
+#   docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+services:
+  php:
+    build:
+      target: production
+    restart: unless-stopped
+    volumes:
+      - ./docker/php/php.prod.ini:/usr/local/etc/php/conf.d/99-custom.ini
+      # Named volume untuk storage agar data persist di luar container
+      - storage_data:/var/www/html/storage
+
+  nginx:
+    ports:
+      - "80:80"
+    restart: unless-stopped
+    volumes:
+      - ./:/var/www/html
+
+  mysql:
+    restart: unless-stopped
+    # Port TIDAK di-expose — DB hanya bisa diakses dari dalam Docker network
+
+  redis:
+    restart: unless-stopped
+    # Port TIDAK di-expose — Redis hanya bisa diakses dari dalam Docker network
+
+volumes:
+  storage_data:
+    driver: local

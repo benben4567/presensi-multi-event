@@ -1,0 +1,48 @@
+# Git repository files - tidak diperlukan di dalam container
+.git
+.gitignore
+
+# Docker Compose file - tidak perlu di-copy ke dalam image
+docker-compose.yml
+docker-compose.*.yml
+
+# Dockerfile tidak perlu di-copy ke dalam image (sudah digunakan untuk build)
+docker/*/Dockerfile
+
+# Environment files - akan di-mount sebagai volume atau di-set via environment variables
+.env
+.env.*
+
+# Dependencies yang akan di-install via package manager di dalam container
+node_modules/
+vendor/
+
+# IDE specific files - tidak relevan di dalam container
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS specific files
+.DS_Store
+Thumbs.db
+
+# Laravel specific directories yang akan di-generate atau di-mount
+storage/app/*
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+storage/logs/*
+bootstrap/cache/*
+
+# Testing files - untuk development container tidak diperlukan
+.phpunit.result.cache
+phpunit.xml
+
+# Documentation files
+README.md
+*.md
+
+# Tapi KEEP configuration files yang dibutuhkan untuk build
+!docker/php/php.ini
+!docker/nginx/default.conf

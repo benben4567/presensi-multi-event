@@ -1,0 +1,38 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(vendor/bin/sail ps:*)",
+      "Bash(vendor/bin/sail php:*)",
+      "Bash(docker compose:*)",
+      "Bash(npm:*)",
+      "Bash(mv:*)",
+      "Bash(docker ps:*)",
+      "Bash(docker exec:*)",
+      "mcp__laravel-boost__application-info",
+      "mcp__laravel-boost__database-schema",
+      "Bash(vendor/bin/sail artisan:*)",
+      "Bash(vendor/bin/sail up:)",
+      "mcp__laravel-boost__search-docs",
+      "mcp__laravel-boost__list-routes",
+      "mcp__laravel-boost__last-error",
+      "mcp__laravel-boost__tinker",
+      "mcp__laravel-boost__get-config",
+      "mcp__laravel-boost__get-absolute-url",
+      "Bash(claude mcp:*)",
+      "mcp__laravel-boost__browser-logs",
+      "Bash(node:*)",
+      "Bash(grep:*)",
+      "Bash(git:*)",
+      "Bash(docker:*)",
+      "Bash(ls:*)",
+      "mcp__laravel-boost__read-log-entries",
+      "Bash(curl:*)",
+      "mcp__laravel-boost__database-query",
+      "Bash(do perl:*)"
+    ]
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "laravel-boost"
+  ]
+}

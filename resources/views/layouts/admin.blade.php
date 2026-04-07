@@ -107,6 +107,19 @@
 
             <li>
                 <a
+                    href="{{ route('admin.print-templates.index') }}"
+                    @class([
+                        'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                        'bg-blue-50 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' => request()->routeIs('admin.print-templates.*'),
+                        'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700' => !request()->routeIs('admin.print-templates.*'),
+                    ])
+                >
+                    <x-tabler-file-certificate class="w-5 h-5 flex-shrink-0" />
+                    <span>Template Cetak</span>
+                </a>
+            </li>
+            <li>
+                <a
                     href="{{ route('admin.panduan') }}"
                     @class([
                         'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',

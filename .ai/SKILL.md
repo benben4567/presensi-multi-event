@@ -219,3 +219,132 @@ Close with:
 4) Assumptions (always; at minimum `none`)
 5) Risks/impact (if any)
 6) README update (what changed, or `no changes required`)
+
+---
+
+## 13) Feature Prompt Addendum — Custom Invitation Template (Image Upload + Drag/Resize QR Area)
+
+Use this addendum when implementing **Custom Invitation Template** for **individual printing**.
+
+### Goal (Project-Aligned)
+Enable **admin** to upload a **background image template** (PNG/JPG) for invitation cards sized **80mm × 105mm (portrait)**, then **drag & resize** a rectangle defining the **QR placement area**. The system fills that area with a **scannable QR** and prints a **1-page PDF** per participant.
+
+This feature must align with the repository context:
+- UI copy is **Bahasa Indonesia**
+- Roles are **admin/operator** (RBAC via `spatie/laravel-permission`)
+- The app is a web attendance system using HID QR scanners, and already has exports/printing flows.
+
+### Scope (MVP)
+#### Must Have
+1) **Admin-only “Template Cetak” management**
+   - Upload background image (PNG/JPG).
+   - Preview canvas with fixed aspect ratio representing **80×105mm portrait**.
+   - Drag & resize one required rectangle: **QR Area**.
+   - Save template: name + background path + QR area coordinates.
+2) **Event-level selection**
+   - Admin can select which template is used for **individual invitation printing** (per event).
+3) **Individual print integration**
+   - On participant/enrollment table row: “Cetak”
+   - If an event has a custom template selected → use it.
+   - Else → fallback to the existing default invitation print.
+4) **Guardrails**
+   - QR area is required.
+   - QR area must meet minimum printable size (recommended: shortest side ≥ **30mm**).
+   - QR area must stay within page bounds.
+   - QR must always be placed on a **white backing box** (quiet zone padding) even if the background is patterned/dark.
+5) **Indonesian UI**
+   - Labels, validation messages, buttons, notifications must be in **Bahasa Indonesia**.
+
+#### Explicitly Out of Scope
+- Mass export with custom template (keep current mass export behavior unchanged for now).
+- Drag/drop for title/name/phone text areas (only QR area is configurable in MVP).
+- Admin-editable HTML/CSS template editor.
+- Adding new PDF renderer packages without approval.
+
+### Constraints (Non-Negotiable)
+- **No new packages** without explicit approval.
+- **Never store or display raw QR token**; token remains opaque and internal.
+- QR content format remains: `itsk:att:v1:<TOKEN>`.
+- Must preserve DRY:
+  - Printing logic must remain isolated and reusable (e.g., a dedicated Action/Service).
+  - Do not duplicate print logic across controllers/components.
+
+### Implementation Approach (Recommended, Package-Safe)
+Because adding an HTML→PDF engine is out of scope unless already present, implement PDF generation using existing PDF tooling in the repo:
+- Use the existing PDF library (FPDF) to:
+  - Render the background image to fill the 80×105mm page.
+  - Render the QR image into the configured QR area.
+  - Render minimal required text (event title, participant name, phone) using a consistent placement (not draggable in MVP).
+- The admin preview editor is HTML/CSS (for UI only), but PDF generation must use the repo-approved PDF approach unless an HTML→PDF renderer already exists in the project.
+
+### Data Model Requirements
+Add a new entity/table: `print_templates` (naming may follow repo conventions)
+Minimum fields:
+- `name` (string)
+- `page_width_mm` (int default 80)
+- `page_height_mm` (int default 105)
+- `background_image_path` (string)
+- QR area coordinates (choose ONE coordinate system and be consistent):
+  - **Normalized 0..1**: `qr_x`, `qr_y`, `qr_w`, `qr_h`, OR
+  - **Millimeters**: `qr_x_mm`, `qr_y_mm`, `qr_w_mm`, `qr_h_mm`
+- `is_active` (bool default true)
+- `created_by` (nullable user FK)
+- timestamps
+
+Event selection:
+- Store the selected template on the event:
+  - Option A: `events.print_template_id` (nullable FK), OR
+  - Option B: in `events.settings` (if settings is the existing convention)
+Choose the simplest approach consistent with the repo’s current event settings structure.
+
+### Admin UI Requirements (Flowbite + Livewire)
+Add admin navigation:
+- Menu item: **“Template Cetak”** (admin-only)
+
+Pages:
+1) Template list:
+   - name, status (active), created_at, actions (edit, deactivate/delete)
+2) Template form:
+   - name
+   - upload background image
+   - preview canvas (80×105 portrait)
+   - QR area drag/resize overlay (required)
+   - save
+
+Event form integration:
+- Dropdown: **“Template Undangan (Cetak Individu)”** (optional/nullable)
+- Helper text (Indonesian): choosing a template affects only “Cetak” per participant.
+
+### Drag/Resize Rules (No New JS Packages)
+- Do not add new external JS UI libraries.
+- Use minimal approach (vanilla JS or Alpine if already in the stack) to support:
+  - drag move
+  - resize from corners/edges
+  - snapping inside bounds
+- Store coordinates precisely and reproducibly.
+
+### Validation Rules (Must Enforce)
+- Background image must be PNG/JPG with reasonable size.
+- QR area:
+  - required
+  - within page bounds
+  - meets minimum size threshold
+- If validation fails, return Indonesian messages.
+
+### Testing (PHPUnit / Repo Defaults)
+Add minimal tests:
+- Admin can create template (upload + valid QR area).
+- Validation fails for missing / too-small / out-of-bounds QR area.
+- Event can be saved with selected template.
+- Individual print route/action returns a valid PDF response when template is selected (smoke test).
+
+### Definition of Done (Feature)
+- Admin can upload template image, set QR area via drag/resize, and save.
+- Admin can select a template on an event.
+- Clicking “Cetak” per participant generates **80×105mm portrait** PDF using background + scannable QR.
+- No new dependencies added.
+- Tests pass and formatting/lint (Pint) is clean.
+- README: update only if running/config changes; otherwise “README: no changes required”.
+
+### Assumptions (If Needed)
+If any ambiguity exists (e.g., where to store template selection, coordinate units, or current PDF generation entry points), list assumptions explicitly before major code changes.

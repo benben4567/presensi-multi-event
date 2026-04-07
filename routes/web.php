@@ -12,6 +12,8 @@ use App\Livewire\AdminLaporan;
 use App\Livewire\AdminMonitoringActivity;
 use App\Livewire\AdminMonitoringQueue;
 use App\Livewire\AdminPresensi;
+use App\Livewire\AdminPrintTemplateForm;
+use App\Livewire\AdminPrintTemplateIndex;
 use App\Livewire\AdminUserForm;
 use App\Livewire\AdminUserIndex;
 use App\Livewire\OpsEventManual;
@@ -74,6 +76,10 @@ Route::middleware(['auth', 'verified', 'role:admin'])
         Route::get('/users/{user}/edit', AdminUserForm::class)->name('users.edit');
 
         Route::get('/panduan', Panduan::class)->name('panduan');
+
+        Route::get('/print-templates', AdminPrintTemplateIndex::class)->name('print-templates.index');
+        Route::get('/print-templates/create', AdminPrintTemplateForm::class)->name('print-templates.create');
+        Route::get('/print-templates/{template}/edit', AdminPrintTemplateForm::class)->name('print-templates.edit');
 
         Route::prefix('monitoring')->name('monitoring.')->group(function (): void {
             Route::get('/activity', AdminMonitoringActivity::class)->name('activity');

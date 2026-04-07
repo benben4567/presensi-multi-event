@@ -4,6 +4,7 @@ namespace App\Livewire;
 
 use App\Models\Event;
 use App\Models\EventSession;
+use App\Models\PrintTemplate;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
@@ -35,6 +36,8 @@ class AdminEventForm extends Component
     /** Tambahan field meta, pisahkan dengan koma. */
     public string $extraDisplayFields = '';
 
+    public string $printTemplateId = '';
+
     public function mount(?Event $event = null): void
     {
         if ($event && $event->exists) {
@@ -51,6 +54,7 @@ class AdminEventForm extends Component
             $this->operatorDisplayFields = array_values(array_intersect($allFields, $predefined));
             $extra = array_diff($allFields, $predefined);
             $this->extraDisplayFields = implode(', ', $extra);
+            $this->printTemplateId = (string) ($event->settings['print_template_id'] ?? '');
         }
     }
 
@@ -81,6 +85,7 @@ class AdminEventForm extends Component
             'settings' => [
                 'enable_checkout' => $this->enableCheckout,
                 'operator_display_fields' => $displayFields,
+                'print_template_id' => $this->printTemplateId !== '' ? (int) $this->printTemplateId : null,
             ],
             'updated_by' => Auth::id(),
         ];
@@ -182,7 +187,8 @@ class AdminEventForm extends Component
             : collect();
 
         $event = $this->eventId ? Event::find($this->eventId) : null;
+        $activeTemplates = PrintTemplate::query()->where('is_active', true)->orderBy('name')->get();
 
-        return view('livewire.admin-event-form', compact('sessions', 'event'));
+        return view('livewire.admin-event-form', compact('sessions', 'event', 'activeTemplates'));
     }
 }

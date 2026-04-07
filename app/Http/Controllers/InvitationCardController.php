@@ -5,11 +5,13 @@ namespace App\Http\Controllers;
 use App\Enums\AccessStatus;
 use App\Models\Event;
 use App\Models\EventParticipant;
+use App\Models\PrintTemplate;
 use App\Support\FpdfExtended;
 use BaconQrCode\Common\ErrorCorrectionLevel;
 use BaconQrCode\Encoder\Encoder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Storage;
 use Rap2hpoutre\FastExcel\FastExcel;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -22,7 +24,13 @@ class InvitationCardController extends Controller
     {
         set_time_limit(300);
 
-        $pdf = new FpdfExtended('P', 'mm', [80, 105]);
+        $templateId = $event->settings['print_template_id'] ?? null;
+        $template = $templateId ? PrintTemplate::find($templateId) : null;
+
+        $pdf = $template
+            ? new FpdfExtended('P', 'mm', [$template->page_width_mm, $template->page_height_mm])
+            : new FpdfExtended('P', 'mm', [80, 105]);
+
         $pdf->SetMargins(0, 0, 0);
         $pdf->SetAutoPageBreak(false);
 
@@ -38,10 +46,16 @@ class InvitationCardController extends Controller
             ->whereNull('invitations.revoked_at')
             ->select('event_participants.*')
             ->orderBy('participants.name')
-            ->chunkById(100, function ($chunk) use ($pdf, $event, &$count): void {
+            ->chunkById(100, function ($chunk) use ($pdf, $event, $template, &$count): void {
                 foreach ($chunk as $ep) {
                     $pdf->AddPage();
-                    $this->addElegantCard($pdf, $event, $ep);
+
+                    if ($template) {
+                        $this->addTemplateCard($pdf, $ep, $template);
+                    } else {
+                        $this->addElegantCard($pdf, $event, $ep);
+                    }
+
                     $count++;
                 }
             }, 'event_participants.id', 'id');
@@ -59,7 +73,7 @@ class InvitationCardController extends Controller
             ->header('Content-Disposition', 'attachment; filename="'.$filename.'"');
     }
 
-    // ── Individual HTML print (uses invitation-card Blade view) ──────────────
+    // ── Individual print — PDF with custom template or default HTML ─────────
 
     public function print(Event $event, EventParticipant $eventParticipant): Response
     {
@@ -69,6 +83,12 @@ class InvitationCardController extends Controller
 
         abort_if(! $invitation?->token, 404);
         abort_if($invitation->isRevoked(), 404);
+
+        $templateId = $event->settings['print_template_id'] ?? null;
+
+        if ($templateId && $template = PrintTemplate::find($templateId)) {
+            return $this->printWithTemplate($event, $eventParticipant, $template);
+        }
 
         $qrSvg = QrCode::format('svg')
             ->size(300)
@@ -81,6 +101,64 @@ class InvitationCardController extends Controller
             'participant' => $eventParticipant->participant,
             'qrSvg' => $qrSvg,
         ]);
+    }
+
+    /**
+     * Render a custom-template PDF for one participant (individual print).
+     */
+    private function printWithTemplate(Event $event, EventParticipant $ep, PrintTemplate $template): Response
+    {
+        $pdf = new FpdfExtended('P', 'mm', [$template->page_width_mm, $template->page_height_mm]);
+        $pdf->SetMargins(0, 0, 0);
+        $pdf->SetAutoPageBreak(false);
+        $pdf->AddPage();
+
+        $this->addTemplateCard($pdf, $ep, $template);
+
+        $slug = str($ep->participant->name)->slug();
+        $filename = "undangan-{$slug}.pdf";
+
+        return response($pdf->Output('S'))
+            ->header('Content-Type', 'application/pdf')
+            ->header('Content-Disposition', "inline; filename=\"{$filename}\"");
+    }
+
+    /**
+     * Draw one template-based card onto an existing PDF instance.
+     */
+    private function addTemplateCard(FpdfExtended $pdf, EventParticipant $ep, PrintTemplate $template): void
+    {
+        $invitation = $ep->invitation;
+        $bgPath = Storage::disk('public')->path($template->background_image_path);
+        $ext = strtolower(pathinfo($bgPath, PATHINFO_EXTENSION));
+        $fpdfType = $ext === 'jpg' || $ext === 'jpeg' ? 'JPEG' : 'PNG';
+
+        // Background image fills the page
+        $pdf->Image($bgPath, 0, 0, $template->page_width_mm, $template->page_height_mm, $fpdfType);
+
+        // White quiet-zone backing box (2 mm padding)
+        $padding = 2;
+        $pdf->SetFillColor(255, 255, 255);
+        $pdf->Rect(
+            $template->qr_x_mm - $padding,
+            $template->qr_y_mm - $padding,
+            $template->qr_w_mm + $padding * 2,
+            $template->qr_h_mm + $padding * 2,
+            'F',
+        );
+
+        // QR code
+        $tmpFile = $this->generateQrPng('itsk:att:v1:'.$invitation->token);
+        $pdf->Image($tmpFile, $template->qr_x_mm, $template->qr_y_mm, $template->qr_w_mm, $template->qr_h_mm, 'PNG');
+        @unlink($tmpFile);
+
+        // Nama peserta di bawah QR
+        $encode = fn (string $text): string => iconv('UTF-8', 'windows-1252//TRANSLIT//IGNORE', $text) ?: $text;
+        $nameY = $template->qr_y_mm + $template->qr_h_mm + 1;
+        $pdf->SetFont('Arial', 'B', 10);
+        $pdf->SetTextColor(0, 0, 0);
+        $pdf->SetXY($template->qr_x_mm - $padding, $nameY);
+        $pdf->Cell($template->qr_w_mm + $padding * 2, 6, $encode($ep->participant->name), 0, 0, 'C');
     }
 
     // ── Sticker sheet PDF ────────────────────────────────────────────────────

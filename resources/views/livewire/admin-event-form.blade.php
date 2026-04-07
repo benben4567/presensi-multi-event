@@ -141,6 +141,28 @@
                 </label>
             </div>
 
+            {{-- Template Undangan --}}
+            <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+                <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-100 pb-4 mb-5 border-b border-gray-100 dark:border-gray-700">
+                    Template Undangan
+                </h3>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                        Template Cetak Individu
+                    </label>
+                    <x-ui.select wire:model="printTemplateId">
+                        <option value="">— Gunakan default —</option>
+                        @foreach ($activeTemplates as $tpl)
+                            <option value="{{ $tpl->id }}">{{ $tpl->name }} ({{ $tpl->page_width_mm }}×{{ $tpl->page_height_mm }} mm)</option>
+                        @endforeach
+                    </x-ui.select>
+                    <p class="mt-1.5 text-xs text-gray-400 dark:text-gray-500">
+                        Pilihan ini hanya memengaruhi tombol "Cetak" per peserta. Ekspor massal tetap menggunakan template bawaan.
+                    </p>
+                </div>
+            </div>
+
             {{-- Daftar Hari (edit mode) --}}
             @if ($eventId)
                 <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">

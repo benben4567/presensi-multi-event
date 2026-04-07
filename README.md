@@ -112,8 +112,8 @@ Akses aplikasi di **http://localhost:8080** (dev) atau **http://localhost:80** (
 
 | Role | Email | Password |
 |---|---|---|
-| Admin | `admin@example.com` | `password` |
-| Operator | `operator@example.com` | `password` |
+| Admin | `admin@presensi.test` | `password` |
+| Operator | `operator@presensi.test` | `password` |
 
 > Ganti password segera setelah login pertama di lingkungan produksi.
 

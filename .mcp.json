@@ -1,8 +1,20 @@
 {
     "mcpServers": {
         "laravel-boost": {
-            "command": "docker",
-            "args": ["exec", "-i", "laravel_php", "php", "artisan", "boost:mcp"]
+            "command": "php",
+            "args": [
+                "artisan",
+                "boost:mcp"
+            ]
+        },
+        "herd": {
+            "command": "php",
+            "args": [
+                "/Applications/Herd.app/Contents/Resources/herd-mcp.phar"
+            ],
+            "env": {
+                "SITE_PATH": "/Users/benben/Documents/PROJECTS/presensi-qr"
+            }
         }
     }
 }

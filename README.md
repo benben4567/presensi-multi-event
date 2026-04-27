@@ -159,6 +159,83 @@ Database hanya menyimpan hash token — token mentah tidak pernah disimpan.
 
 ---
 
+## Deploy ke Production (VPS)
+
+### Prasyarat
+- VPS dengan Docker & Docker Compose
+- Domain dengan SSL (HTTPS)
+- `.env` production sudah dikonfigurasi (lihat `.env.example`)
+
+### Konfigurasi `.env` Production Wajib
+
+```env
+APP_ENV=production
+APP_DEBUG=false
+APP_URL=https://your-domain.com   # wajib HTTPS
+```
+
+### Pertama Kali Deploy
+
+```bash
+# 1. Clone repo
+git clone <repo-url> && cd presensi-qr
+
+# 2. Siapkan .env production
+cp .env.example .env
+# Edit .env sesuai kebutuhan
+
+# 3. Upload built assets (gitignored, build dulu di local)
+npm run build
+rsync -avz public/build/ user@vps:/path/to/app/public/build/
+
+# 4. Build & jalankan container
+sudo docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+
+# 5. Setup aplikasi
+sudo docker exec checkin_php php artisan migrate --force
+sudo docker exec checkin_php php artisan db:seed --force
+sudo docker exec checkin_php php artisan storage:link
+sudo docker exec checkin_php php artisan optimize
+```
+
+### Deploy Perubahan Kode (Rutin)
+
+```bash
+git pull
+sudo docker exec checkin_php php artisan optimize
+
+# Jika ada migration baru:
+sudo docker exec checkin_php php artisan migrate --force
+```
+
+### Deploy Perubahan `docker-compose.prod.yml`
+
+```bash
+git pull
+sudo docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --no-build php nginx
+```
+
+### Rebuild Image (Hanya Jika Diperlukan)
+
+Diperlukan hanya saat `composer.json` atau `Dockerfile` berubah:
+
+```bash
+git pull
+sudo docker compose -f docker-compose.yml -f docker-compose.prod.yml build php
+sudo docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d php
+sudo docker exec checkin_php php artisan optimize
+```
+
+### Update Assets Frontend
+
+```bash
+# Di local machine:
+npm run build
+rsync -avz public/build/ user@vps:/path/to/app/public/build/
+```
+
+---
+
 ## Perintah Berguna
 
 ```bash
@@ -171,14 +248,20 @@ docker exec checkin_php ./vendor/bin/pint --dirty
 # Clear cache
 docker exec checkin_php php artisan optimize:clear
 
+# Rebuild cache
+docker exec checkin_php php artisan optimize
+
 # Buka shell PHP container
 docker exec -it checkin_php sh
 
-# Log container
-docker-compose logs -f
+# Log Laravel
+docker exec checkin_php tail -100 /var/www/html/storage/logs/laravel.log
+
+# Log container PHP
+docker logs checkin_php --tail 100
 
 # Stop container
-docker-compose down
+docker compose -f docker-compose.yml -f docker-compose.prod.yml down
 ```
 
 ---

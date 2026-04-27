@@ -18,6 +18,7 @@ services:
     restart: unless-stopped
     volumes:
       - ./:/var/www/html
+      - storage_data:/var/www/html/storage
 
   mysql:
     restart: unless-stopped

@@ -530,3 +530,44 @@ Contoh pesan hasil presensi:
 
 Semua tombol/label:
 - “Simpan”, “Batal”, “Hapus”, “Impor Peserta”, “Buka Presensi”, “Nonaktifkan”, “Blacklist”, “Aktifkan Kembali”, “Keluar”
+
+---
+
+## 15) Production Deployment
+
+### Infrastruktur VPS
+- VPS dikelola dengan **1Panel**
+- Reverse proxy: **1Panel OpenResty** (terminasi SSL/HTTPS)
+- Compose path: `/opt/1panel/docker/compose/checkin-itsk/`
+- Container names: `checkin_php`, `checkin_nginx`, `checkin_mysql`, `checkin_redis`
+- Compose command: `sudo docker compose -f docker-compose.yml -f docker-compose.prod.yml`
+
+### Arsitektur Volume Docker
+- PHP code di-mount via volumes (bukan di-bake ke image) → git pull langsung efek
+- `vendor/` di-bake ke image saat build (rebuild hanya jika `composer.json` berubah)
+- `storage_data` named volume di-mount ke PHP **dan** nginx (file upload accessible keduanya)
+- `public/build/` di-mount dari host (gitignored, build di local → rsync ke VPS)
+
+### HTTPS & Trusted Proxy
+- SSL di-terminate di 1Panel OpenResty (reverse proxy)
+- Request masuk ke container sebagai HTTP
+- `bootstrap/app.php`: `$middleware->trustProxies(at: '*')` — baca `X-Forwarded-Proto`
+- `AppServiceProvider::boot()`: `URL::forceScheme('https')` jika `production`
+- `APP_URL` wajib `https://` di `.env` production
+
+### Deploy Workflow
+```bash
+# Perubahan kode PHP/Blade/config (rutin):
+git pull && sudo docker exec checkin_php php artisan optimize
+
+# Perubahan docker-compose.prod.yml:
+sudo docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --no-build php nginx
+
+# Rebuild image (hanya jika composer.json/Dockerfile berubah):
+sudo docker compose -f docker-compose.yml -f docker-compose.prod.yml build php
+sudo docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d php
+sudo docker exec checkin_php php artisan optimize
+
+# Update assets frontend:
+npm run build && rsync -avz public/build/ user@vps:/path/to/app/public/build/
+```

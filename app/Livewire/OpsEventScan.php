@@ -26,6 +26,11 @@ class OpsEventScan extends Component
 
     public ?string $resultName = null;
 
+    public ?string $resultPhone = null;
+
+    /** @var array<string, mixed> */
+    public array $resultMeta = [];
+
     public function mount(Event $event): void
     {
         $this->eventId = $event->id;
@@ -61,9 +66,10 @@ class OpsEventScan extends Component
             Auth::id(),
         );
 
-        $name = $result->log?->load('eventParticipant.participant')?->eventParticipant?->participant?->name;
+        $participant = $result->log?->load('eventParticipant.participant')?->eventParticipant?->participant
+            ?? $result->enrollment?->participant;
 
-        $this->applyResult($result, $name);
+        $this->applyResult($result, $participant?->name, $participant?->phone_e164, $participant?->meta ?? []);
     }
 
     public function clearResult(): void
@@ -71,13 +77,17 @@ class OpsEventScan extends Component
         $this->resultOutcome = null;
         $this->resultMessage = '';
         $this->resultName = null;
+        $this->resultPhone = null;
+        $this->resultMeta = [];
     }
 
-    private function applyResult(AttendanceScanResult $result, ?string $name): void
+    private function applyResult(AttendanceScanResult $result, ?string $name, ?string $phone = null, array $meta = []): void
     {
         $this->resultOutcome = $result->outcome;
         $this->resultMessage = $result->message;
         $this->resultName = $name;
+        $this->resultPhone = $phone;
+        $this->resultMeta = $meta;
 
         array_unshift($this->recentScans, [
             'outcome' => $result->outcome,

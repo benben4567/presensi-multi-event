@@ -68,7 +68,16 @@
                 <div class="flex-1 min-w-0">
                     @if($resultName)
                         <p class="text-lg font-semibold {{ $textClass }}">{{ $resultName }}</p>
-                        <p class="text-sm mt-0.5 {{ $textClass }}">{{ $resultMessage }}</p>
+                        @if($resultPhone)
+                            <p class="text-sm font-mono {{ $textClass }} opacity-80">{{ $resultPhone }}</p>
+                        @endif
+                        @foreach($resultMeta as $key => $value)
+                            <p class="text-sm {{ $textClass }} opacity-80">
+                                <span class="font-medium uppercase tracking-wide text-xs opacity-70">{{ $key }}</span>
+                                {{ $value }}
+                            </p>
+                        @endforeach
+                        <p class="text-sm mt-1 {{ $textClass }}">{{ $resultMessage }}</p>
                     @else
                         <p class="text-base font-semibold {{ $textClass }}">{{ $resultMessage }}</p>
                     @endif

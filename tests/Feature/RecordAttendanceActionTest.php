@@ -96,30 +96,40 @@ class RecordAttendanceActionTest extends TestCase
     #[Test]
     public function qr_check_out_accepted_after_check_in(): void
     {
+        $event = Event::factory()->open()->withCheckout()->create([
+            'start_at' => now()->subDay(),
+            'end_at' => now()->addDays(3),
+        ]);
+        $session = EventSession::factory()->for($event)->create();
+        $enrollment = EventParticipant::factory()->for($event)->create();
+        $token = bin2hex(random_bytes(32));
+        Invitation::factory()->for($enrollment, 'eventParticipant')->create([
+            'token_hash' => hash('sha256', $token),
+            'token' => $token,
+            'issued_at' => now()->subHour(),
+            'expires_at' => now()->addDays(3),
+        ]);
+
         // First scan → check-in
         $this->action->executeQr(
-            $this->event,
-            $this->session,
-            'itsk:att:v1:'.$this->rawToken,
-            $this->deviceUuid,
-            $this->operator->id,
+            $event, $session,
+            'itsk:att:v1:'.$token,
+            $this->deviceUuid, $this->operator->id,
         );
 
         // Second scan → check-out
         $result = $this->action->executeQr(
-            $this->event,
-            $this->session,
-            'itsk:att:v1:'.$this->rawToken,
-            $this->deviceUuid,
-            $this->operator->id,
+            $event, $session,
+            'itsk:att:v1:'.$token,
+            $this->deviceUuid, $this->operator->id,
         );
 
         $this->assertTrue($result->isAccepted());
         $this->assertEquals(ScanResultCode::CheckedOut, $result->code);
 
         $this->assertDatabaseHas('attendance_logs', [
-            'event_participant_id' => $this->enrollment->id,
-            'session_id' => $this->session->id,
+            'event_participant_id' => $enrollment->id,
+            'session_id' => $session->id,
             'action' => AttendanceAction::CheckOut->value,
         ]);
     }
@@ -312,24 +322,38 @@ class RecordAttendanceActionTest extends TestCase
     #[Test]
     public function qr_scan_after_full_cycle_gives_warning(): void
     {
+        $event = Event::factory()->open()->withCheckout()->create([
+            'start_at' => now()->subDay(),
+            'end_at' => now()->addDays(3),
+        ]);
+        $session = EventSession::factory()->for($event)->create();
+        $enrollment = EventParticipant::factory()->for($event)->create();
+        $token = bin2hex(random_bytes(32));
+        Invitation::factory()->for($enrollment, 'eventParticipant')->create([
+            'token_hash' => hash('sha256', $token),
+            'token' => $token,
+            'issued_at' => now()->subHour(),
+            'expires_at' => now()->addDays(3),
+        ]);
+
         // Scan 1: check-in
         $this->action->executeQr(
-            $this->event, $this->session,
-            'itsk:att:v1:'.$this->rawToken,
+            $event, $session,
+            'itsk:att:v1:'.$token,
             $this->deviceUuid, $this->operator->id,
         );
 
         // Scan 2: check-out
         $this->action->executeQr(
-            $this->event, $this->session,
-            'itsk:att:v1:'.$this->rawToken,
+            $event, $session,
+            'itsk:att:v1:'.$token,
             $this->deviceUuid, $this->operator->id,
         );
 
         // Scan 3: both check_in and check_out already exist → warning
         $result = $this->action->executeQr(
-            $this->event, $this->session,
-            'itsk:att:v1:'.$this->rawToken,
+            $event, $session,
+            'itsk:att:v1:'.$token,
             $this->deviceUuid, $this->operator->id,
         );
 

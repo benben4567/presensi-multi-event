@@ -4,6 +4,7 @@ namespace App\Actions;
 
 use App\Enums\ScanResultCode;
 use App\Models\AttendanceLog;
+use App\Models\EventParticipant;
 
 readonly class AttendanceScanResult
 {
@@ -12,6 +13,7 @@ readonly class AttendanceScanResult
         public ScanResultCode $code,
         public string $message,
         public ?AttendanceLog $log = null,
+        public ?EventParticipant $enrollment = null,
     ) {}
 
     public function isAccepted(): bool

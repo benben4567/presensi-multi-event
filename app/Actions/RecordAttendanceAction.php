@@ -48,7 +48,7 @@ class RecordAttendanceAction
         $tokenHash = hash('sha256', $token);
         $tokenFingerprint = substr($tokenHash, 0, 16);
 
-        $invitation = Invitation::with('eventParticipant')
+        $invitation = Invitation::with('eventParticipant.participant')
             ->where('token_hash', $tokenHash)
             ->first();
 
@@ -82,7 +82,7 @@ class RecordAttendanceAction
                 operatorUserId: $operatorUserId,
             );
 
-            return $this->rejected(ScanResultCode::EventMismatch, 'QR bukan untuk event ini');
+            return $this->rejected(ScanResultCode::EventMismatch, 'QR bukan untuk event ini', $enrollment);
         }
 
         if ($invitation->isRevoked()) {
@@ -98,7 +98,7 @@ class RecordAttendanceAction
                 operatorUserId: $operatorUserId,
             );
 
-            return $this->rejected(ScanResultCode::TokenRevoked, 'QR telah dicabut');
+            return $this->rejected(ScanResultCode::TokenRevoked, 'QR telah dicabut', $enrollment);
         }
 
         if ($invitation->isExpired()) {
@@ -114,7 +114,7 @@ class RecordAttendanceAction
                 operatorUserId: $operatorUserId,
             );
 
-            return $this->rejected(ScanResultCode::TokenExpired, 'QR telah kedaluwarsa');
+            return $this->rejected(ScanResultCode::TokenExpired, 'QR telah kedaluwarsa', $enrollment);
         }
 
         $eventError = $this->getEventStatusError($event);
@@ -132,7 +132,7 @@ class RecordAttendanceAction
                 operatorUserId: $operatorUserId,
             );
 
-            return $this->rejected($eventError['code'], $eventError['message']);
+            return $this->rejected($eventError['code'], $eventError['message'], $enrollment);
         }
 
         $accessDenial = $this->checkAccess($enrollment);
@@ -150,10 +150,10 @@ class RecordAttendanceAction
                 operatorUserId: $operatorUserId,
             );
 
-            return $this->rejected($accessDenial['code'], $accessDenial['message']);
+            return $this->rejected($accessDenial['code'], $accessDenial['message'], $enrollment);
         }
 
-        [$action, $warningCode] = $this->determineAction($enrollment->id, $session->id);
+        [$action, $warningCode] = $this->determineAction($enrollment->id, $session->id, $event);
 
         if ($warningCode !== null) {
             $message = $this->warningMessage($warningCode);
@@ -170,7 +170,7 @@ class RecordAttendanceAction
                 operatorUserId: $operatorUserId,
             );
 
-            return $this->warning($warningCode, $message);
+            return $this->warning($warningCode, $message, $enrollment);
         }
 
         $device = $this->resolveDevice($deviceUuid);
@@ -355,7 +355,7 @@ class RecordAttendanceAction
      *
      * @return array{AttendanceAction|null, ScanResultCode|null}
      */
-    private function determineAction(int $enrollmentId, int $sessionId): array
+    private function determineAction(int $enrollmentId, int $sessionId, Event $event): array
     {
         $hasCheckIn = AttendanceLog::where('event_participant_id', $enrollmentId)
             ->where('session_id', $sessionId)
@@ -371,11 +371,17 @@ class RecordAttendanceAction
             return [AttendanceAction::CheckIn, null];
         }
 
-        if (! $hasCheckOut) {
-            return [AttendanceAction::CheckOut, null];
+        $checkoutEnabled = $event->settings['enable_checkout'] ?? false;
+
+        if ($checkoutEnabled) {
+            if (! $hasCheckOut) {
+                return [AttendanceAction::CheckOut, null];
+            }
+
+            return [null, ScanResultCode::DuplicateCheckOut];
         }
 
-        return [null, ScanResultCode::DuplicateCheckOut];
+        return [null, ScanResultCode::DuplicateCheckIn];
     }
 
     private function warningMessage(ScanResultCode $code): string
@@ -458,13 +464,13 @@ class RecordAttendanceAction
         return new AttendanceScanResult('accepted', $code, $message, $log);
     }
 
-    private function warning(ScanResultCode $code, string $message): AttendanceScanResult
+    private function warning(ScanResultCode $code, string $message, ?EventParticipant $enrollment = null): AttendanceScanResult
     {
-        return new AttendanceScanResult('warning', $code, $message);
+        return new AttendanceScanResult('warning', $code, $message, enrollment: $enrollment);
     }
 
-    private function rejected(ScanResultCode $code, string $message): AttendanceScanResult
+    private function rejected(ScanResultCode $code, string $message, ?EventParticipant $enrollment = null): AttendanceScanResult
     {
-        return new AttendanceScanResult('rejected', $code, $message);
+        return new AttendanceScanResult('rejected', $code, $message, enrollment: $enrollment);
     }
 }

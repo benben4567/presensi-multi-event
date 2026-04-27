@@ -11,6 +11,13 @@ services:
       # Named volume untuk storage agar data persist di luar container
       - storage_data:/var/www/html/storage
       - ./public/build:/var/www/html/public/build
+      # Mount kode aplikasi dari host — git pull langsung efek tanpa rebuild
+      - ./app:/var/www/html/app
+      - ./resources:/var/www/html/resources
+      - ./routes:/var/www/html/routes
+      - ./config:/var/www/html/config
+      - ./database:/var/www/html/database
+      - ./bootstrap:/var/www/html/bootstrap
 
   nginx:
     ports:

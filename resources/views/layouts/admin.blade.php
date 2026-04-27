@@ -32,7 +32,7 @@
             {{-- Brand --}}
             <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-2 ps-2 mb-6">
                 <x-tabler-qrcode class="w-7 h-7 text-blue-600 dark:text-blue-400" />
-                <span class="text-lg font-semibold text-gray-800 dark:text-white">Presensi QR</span>
+                <span class="text-lg font-semibold text-gray-800 dark:text-white">{{ config('app.name') }}</span>
             </a>
 
             {{-- Menu utama --}}

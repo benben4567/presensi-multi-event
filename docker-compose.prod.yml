@@ -10,6 +10,7 @@ services:
       - ./docker/php/php.prod.ini:/usr/local/etc/php/conf.d/99-custom.ini
       # Named volume untuk storage agar data persist di luar container
       - storage_data:/var/www/html/storage
+      - ./public/build:/var/www/html/public/build
 
   nginx:
     ports:

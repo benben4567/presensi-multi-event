@@ -60,26 +60,22 @@ CMD ["php-fpm"]
 # ============================================================
 FROM base AS production
 
-# Copy seluruh aplikasi ke dalam container
-COPY . .
+# Copy seluruh aplikasi ke dalam container (langsung set ownership)
+COPY --chown=www-data:www-data . .
 
 # Install production dependencies (no dev packages)
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
-# Buat direktori yang dibutuhkan Laravel
+# Buat direktori yang dibutuhkan Laravel dan set permissions
 RUN mkdir -p /var/www/html/storage/logs \
     && mkdir -p /var/www/html/storage/app/public \
     && mkdir -p /var/www/html/storage/framework/cache \
     && mkdir -p /var/www/html/storage/framework/sessions \
     && mkdir -p /var/www/html/storage/framework/views \
-    && mkdir -p /var/www/html/bootstrap/cache
-
-# Set proper ownership dan permissions
-RUN chown -R www-data:www-data /var/www/html \
-    && find /var/www/html/storage -type f -exec chmod 664 {} \; \
-    && find /var/www/html/storage -type d -exec chmod 775 {} \; \
-    && find /var/www/html/bootstrap/cache -type f -exec chmod 664 {} \; \
-    && find /var/www/html/bootstrap/cache -type d -exec chmod 775 {} \;
+    && mkdir -p /var/www/html/bootstrap/cache \
+    && chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \
+    && find /var/www/html/storage /var/www/html/bootstrap/cache -type f -exec chmod 664 {} + \
+    && find /var/www/html/storage /var/www/html/bootstrap/cache -type d -exec chmod 775 {} +
 
 COPY docker/php/entrypoint.prod.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh

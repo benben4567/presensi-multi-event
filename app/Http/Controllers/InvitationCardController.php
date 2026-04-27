@@ -46,19 +46,18 @@ class InvitationCardController extends Controller
             ->whereNull('invitations.revoked_at')
             ->select('event_participants.*')
             ->orderBy('participants.name')
-            ->chunkById(100, function ($chunk) use ($pdf, $event, $template, &$count): void {
-                foreach ($chunk as $ep) {
-                    $pdf->AddPage();
+            ->get()
+            ->each(function ($ep) use ($pdf, $event, $template, &$count): void {
+                $pdf->AddPage();
 
-                    if ($template) {
-                        $this->addTemplateCard($pdf, $ep, $template);
-                    } else {
-                        $this->addElegantCard($pdf, $event, $ep);
-                    }
-
-                    $count++;
+                if ($template) {
+                    $this->addTemplateCard($pdf, $ep, $template);
+                } else {
+                    $this->addElegantCard($pdf, $event, $ep);
                 }
-            }, 'event_participants.id', 'id');
+
+                $count++;
+            });
 
         if ($count === 0) {
             return redirect()

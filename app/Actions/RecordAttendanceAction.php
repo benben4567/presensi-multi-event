@@ -117,20 +117,22 @@ class RecordAttendanceAction
             return $this->rejected(ScanResultCode::TokenExpired, 'QR telah kedaluwarsa');
         }
 
-        if (! $this->isEventOpen($event)) {
+        $eventError = $this->getEventStatusError($event);
+
+        if ($eventError !== null) {
             $this->writeScanAttempt(
                 eventId: $event->id,
                 sessionId: $session->id,
                 eventParticipantId: $enrollment->id,
                 source: ScanSource::Qr,
-                code: ScanResultCode::EventClosed,
-                message: 'Event sudah ditutup',
+                code: $eventError['code'],
+                message: $eventError['message'],
                 tokenFingerprint: $tokenFingerprint,
                 deviceUuid: $deviceUuid,
                 operatorUserId: $operatorUserId,
             );
 
-            return $this->rejected(ScanResultCode::EventClosed, 'Event sudah ditutup');
+            return $this->rejected($eventError['code'], $eventError['message']);
         }
 
         $accessDenial = $this->checkAccess($enrollment);
@@ -204,20 +206,22 @@ class RecordAttendanceAction
         string $operatorUserId,
         ?string $manualNote = null,
     ): AttendanceScanResult {
-        if (! $this->isEventOpen($event)) {
+        $eventError = $this->getEventStatusError($event);
+
+        if ($eventError !== null) {
             $this->writeScanAttempt(
                 eventId: $event->id,
                 sessionId: $session->id,
                 eventParticipantId: $enrollment->id,
                 source: ScanSource::Manual,
-                code: ScanResultCode::EventClosed,
-                message: 'Event sudah ditutup',
+                code: $eventError['code'],
+                message: $eventError['message'],
                 deviceUuid: $deviceUuid,
                 operatorUserId: $operatorUserId,
                 manualNote: $manualNote,
             );
 
-            return $this->rejected(ScanResultCode::EventClosed, 'Event sudah ditutup');
+            return $this->rejected($eventError['code'], $eventError['message']);
         }
 
         $accessDenial = $this->checkAccess($enrollment);
@@ -317,9 +321,20 @@ class RecordAttendanceAction
         return $this->accepted($resultCode, $message, $log);
     }
 
-    private function isEventOpen(Event $event): bool
+    /**
+     * @return array{code: ScanResultCode, message: string}|null
+     */
+    private function getEventStatusError(Event $event): ?array
     {
-        return $event->status === EventStatus::Open && $event->isAttendanceOpen();
+        if ($event->status === EventStatus::Draft) {
+            return ['code' => ScanResultCode::EventNotOpen, 'message' => 'Event belum dibuka'];
+        }
+
+        if ($event->status === EventStatus::Closed || ! $event->isAttendanceOpen()) {
+            return ['code' => ScanResultCode::EventClosed, 'message' => 'Event sudah ditutup'];
+        }
+
+        return null;
     }
 
     /**

@@ -245,6 +245,33 @@ class RecordAttendanceActionTest extends TestCase
     }
 
     #[Test]
+    public function qr_event_draft_rejected(): void
+    {
+        $draftEvent = Event::factory()->create(); // default state is draft
+        $enrollment = EventParticipant::factory()->for($draftEvent)->create();
+        $token = bin2hex(random_bytes(32));
+
+        Invitation::factory()->for($enrollment, 'eventParticipant')->create([
+            'token_hash' => hash('sha256', $token),
+            'token' => $token,
+            'issued_at' => now()->subDay(),
+            'expires_at' => now()->addDay(),
+        ]);
+
+        $result = $this->action->executeQr(
+            $draftEvent,
+            EventSession::factory()->for($draftEvent)->create(),
+            'itsk:att:v1:'.$token,
+            $this->deviceUuid,
+            $this->operator->id,
+        );
+
+        $this->assertTrue($result->isRejected());
+        $this->assertEquals(ScanResultCode::EventNotOpen, $result->code);
+        $this->assertDatabaseCount('attendance_logs', 0);
+    }
+
+    #[Test]
     public function qr_participant_disabled_rejected(): void
     {
         $this->enrollment->update(['access_status' => 'disabled']);
@@ -380,6 +407,26 @@ class RecordAttendanceActionTest extends TestCase
 
         $this->assertTrue($result->isRejected());
         $this->assertEquals(ScanResultCode::EventClosed, $result->code);
+        $this->assertDatabaseCount('attendance_logs', 0);
+    }
+
+    #[Test]
+    public function manual_event_draft_rejected(): void
+    {
+        $draftEvent = Event::factory()->create(); // default state is draft
+        $enrollment = EventParticipant::factory()->for($draftEvent)->create();
+
+        $result = $this->action->executeManual(
+            $draftEvent,
+            EventSession::factory()->for($draftEvent)->create(),
+            $enrollment,
+            AttendanceAction::CheckIn,
+            $this->deviceUuid,
+            $this->operator->id,
+        );
+
+        $this->assertTrue($result->isRejected());
+        $this->assertEquals(ScanResultCode::EventNotOpen, $result->code);
         $this->assertDatabaseCount('attendance_logs', 0);
     }
 

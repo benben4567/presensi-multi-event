@@ -13,6 +13,7 @@ enum ScanResultCode: string
     case TokenExpired = 'token_expired';
     case TokenRevoked = 'token_revoked';
     case EventMismatch = 'event_mismatch';
+    case EventNotOpen = 'event_not_open';
     case EventClosed = 'event_closed';
     case ParticipantDisabled = 'participant_disabled';
     case ParticipantBlacklisted = 'participant_blacklisted';
@@ -29,6 +30,7 @@ enum ScanResultCode: string
             self::TokenExpired => 'Token kedaluwarsa',
             self::TokenRevoked => 'Token dicabut',
             self::EventMismatch => 'Event tidak cocok',
+            self::EventNotOpen => 'Event belum dibuka',
             self::EventClosed => 'Event sudah ditutup',
             self::ParticipantDisabled => 'Peserta dinonaktifkan',
             self::ParticipantBlacklisted => 'Peserta diblacklist',

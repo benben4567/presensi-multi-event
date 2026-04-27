@@ -92,9 +92,9 @@ Edit `.env` untuk menyesuaikan kredensial database dan konfigurasi lainnya.
 ### 3. Setup Aplikasi
 
 ```bash
-docker exec laravel_php php artisan key:generate
-docker exec laravel_php php artisan migrate
-docker exec laravel_php php artisan db:seed
+docker exec checkin_php php artisan key:generate
+docker exec checkin_php php artisan migrate
+docker exec checkin_php php artisan db:seed
 ```
 
 ### 4. Build Assets Frontend
@@ -163,16 +163,16 @@ Database hanya menyimpan hash token — token mentah tidak pernah disimpan.
 
 ```bash
 # Jalankan test suite
-docker exec laravel_php php artisan test --compact
+docker exec checkin_php php artisan test --compact
 
 # Code style formatter
-docker exec laravel_php ./vendor/bin/pint --dirty
+docker exec checkin_php ./vendor/bin/pint --dirty
 
 # Clear cache
-docker exec laravel_php php artisan optimize:clear
+docker exec checkin_php php artisan optimize:clear
 
 # Buka shell PHP container
-docker exec -it laravel_php sh
+docker exec -it checkin_php sh
 
 # Log container
 docker-compose logs -f

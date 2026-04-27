@@ -7,27 +7,27 @@ services:
     build:
       context: .
       dockerfile: docker/php/Dockerfile
-    container_name: laravel_php
+    container_name: checkin_php
     working_dir: /var/www/html
     networks:
-      - laravel_network
+      - checkin_network
     depends_on:
       - mysql
       - redis
 
   nginx:
     image: nginx:alpine
-    container_name: laravel_nginx
+    container_name: checkin_nginx
     volumes:
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
     networks:
-      - laravel_network
+      - checkin_network
     depends_on:
       - php
 
   mysql:
     image: mysql:8.0
-    container_name: laravel_mysql
+    container_name: checkin_mysql
     environment:
       MYSQL_DATABASE: ${DB_DATABASE}
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
@@ -36,20 +36,20 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
     networks:
-      - laravel_network
+      - checkin_network
     command: --default-authentication-plugin=mysql_native_password
 
   redis:
     image: redis:7-alpine
-    container_name: laravel_redis
+    container_name: checkin_redis
     volumes:
       - redis_data:/data
     networks:
-      - laravel_network
+      - checkin_network
     command: redis-server --appendonly yes
 
 networks:
-  laravel_network:
+  checkin_network:
     driver: bridge
 
 volumes:

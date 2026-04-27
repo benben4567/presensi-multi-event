@@ -6,6 +6,7 @@ services:
       target: production
     restart: unless-stopped
     volumes:
+      - ./.env:/var/www/html/.env
       - ./docker/php/php.prod.ini:/usr/local/etc/php/conf.d/99-custom.ini
       # Named volume untuk storage agar data persist di luar container
       - storage_data:/var/www/html/storage

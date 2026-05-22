@@ -147,19 +147,49 @@
                     Template Undangan
                 </h3>
 
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                        Template Cetak Individu
-                    </label>
-                    <x-ui.select wire:model="printTemplateId">
-                        <option value="">— Gunakan default —</option>
-                        @foreach ($activeTemplates as $tpl)
-                            <option value="{{ $tpl->id }}">{{ $tpl->name }} ({{ $tpl->page_width_mm }}×{{ $tpl->page_height_mm }} mm)</option>
-                        @endforeach
-                    </x-ui.select>
-                    <p class="mt-1.5 text-xs text-gray-400 dark:text-gray-500">
-                        Pilihan ini hanya memengaruhi tombol "Cetak" per peserta. Ekspor massal tetap menggunakan template bawaan.
-                    </p>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                            Template Cetak Individu
+                        </label>
+                        <x-ui.select wire:model="printTemplateId">
+                            <option value="">— Gunakan default —</option>
+                            @foreach ($activeTemplates as $tpl)
+                                <option value="{{ $tpl->id }}">{{ $tpl->name }} ({{ $tpl->page_width_mm }}×{{ $tpl->page_height_mm }} mm)</option>
+                            @endforeach
+                        </x-ui.select>
+                        <p class="mt-1.5 text-xs text-gray-400 dark:text-gray-500">
+                            Pilihan ini hanya memengaruhi tombol "Cetak" per peserta. Ekspor massal tetap menggunakan template bawaan.
+                        </p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                            Teks di Bawah QR Code
+                        </label>
+                        <x-ui.select wire:model.live="printCaptionType">
+                            <option value="name">Nama Peserta</option>
+                            <option value="invitation_code">Kode Undangan</option>
+                            <option value="phone">Nomor HP</option>
+                            <option value="none">Kosong (tidak ditampilkan)</option>
+                            <option value="meta">Field Meta...</option>
+                        </x-ui.select>
+                        @error('printCaptionType')
+                            <p class="mt-1.5 text-xs text-red-600 dark:text-red-400">{{ $message }}</p>
+                        @enderror
+
+                        @if ($printCaptionType === 'meta')
+                            <div class="mt-2">
+                                <x-ui.input wire:model="printCaptionMetaKey" placeholder="Contoh: jabatan" />
+                                <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">
+                                    Nama key dari field meta peserta. Contoh: <span class="font-mono">jabatan</span>, <span class="font-mono">institusi</span>, <span class="font-mono">angkatan</span>.
+                                </p>
+                                @error('printCaptionMetaKey')
+                                    <p class="mt-1.5 text-xs text-red-600 dark:text-red-400">{{ $message }}</p>
+                                @enderror
+                            </div>
+                        @endif
+                    </div>
                 </div>
             </div>
 

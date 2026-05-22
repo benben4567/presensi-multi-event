@@ -38,6 +38,12 @@ class AdminEventForm extends Component
 
     public string $printTemplateId = '';
 
+    /** 'name'|'invitation_code'|'phone'|'none'|'meta' */
+    public string $printCaptionType = 'name';
+
+    /** Key name when printCaptionType === 'meta', e.g. 'jabatan'. */
+    public string $printCaptionMetaKey = '';
+
     public function mount(?Event $event = null): void
     {
         if ($event && $event->exists) {
@@ -55,6 +61,16 @@ class AdminEventForm extends Component
             $extra = array_diff($allFields, $predefined);
             $this->extraDisplayFields = implode(', ', $extra);
             $this->printTemplateId = (string) ($event->settings['print_template_id'] ?? '');
+
+            $captionField = $event->settings['print_caption_field'] ?? 'name';
+            if (str_starts_with((string) $captionField, 'meta.')) {
+                $this->printCaptionType = 'meta';
+                $this->printCaptionMetaKey = substr((string) $captionField, 5);
+            } else {
+                $this->printCaptionType = in_array($captionField, ['name', 'invitation_code', 'phone', 'none'], true)
+                    ? $captionField
+                    : 'name';
+            }
         }
     }
 
@@ -72,9 +88,15 @@ class AdminEventForm extends Component
             'operatorDisplayFields' => ['array'],
             'operatorDisplayFields.*' => ['string'],
             'extraDisplayFields' => ['nullable', 'string', 'max:500'],
+            'printCaptionType' => ['required', Rule::in(['name', 'invitation_code', 'phone', 'none', 'meta'])],
+            'printCaptionMetaKey' => ['required_if:printCaptionType,meta', 'nullable', 'string', 'max:100'],
         ]);
 
         $displayFields = $this->buildDisplayFields();
+
+        $captionField = $this->printCaptionType === 'meta'
+            ? 'meta.'.trim($this->printCaptionMetaKey)
+            : $this->printCaptionType;
 
         $data = [
             'code' => $this->code ?: null,
@@ -86,6 +108,7 @@ class AdminEventForm extends Component
                 'enable_checkout' => $this->enableCheckout,
                 'operator_display_fields' => $displayFields,
                 'print_template_id' => $this->printTemplateId !== '' ? (int) $this->printTemplateId : null,
+                'print_caption_field' => $captionField,
             ],
             'updated_by' => Auth::id(),
         ];

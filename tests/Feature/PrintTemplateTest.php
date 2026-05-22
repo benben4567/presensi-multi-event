@@ -316,4 +316,214 @@ class PrintTemplateTest extends TestCase
             ->assertOk()
             ->assertHeader('content-type', 'text/html; charset=UTF-8');
     }
+
+    // ── Caption field — event settings ───────────────────────────────────────
+
+    #[Test]
+    public function event_form_saves_caption_type_name(): void
+    {
+        $event = Event::factory()->create([
+            'settings' => ['enable_checkout' => false, 'operator_display_fields' => ['name']],
+        ]);
+
+        Livewire::actingAs($this->admin)
+            ->test(\App\Livewire\AdminEventForm::class, ['event' => $event])
+            ->set('printCaptionType', 'name')
+            ->call('save');
+
+        $this->assertSame('name', $event->fresh()->settings['print_caption_field']);
+    }
+
+    #[Test]
+    public function event_form_saves_caption_type_invitation_code(): void
+    {
+        $event = Event::factory()->create([
+            'settings' => ['enable_checkout' => false, 'operator_display_fields' => ['name']],
+        ]);
+
+        Livewire::actingAs($this->admin)
+            ->test(\App\Livewire\AdminEventForm::class, ['event' => $event])
+            ->set('printCaptionType', 'invitation_code')
+            ->call('save');
+
+        $this->assertSame('invitation_code', $event->fresh()->settings['print_caption_field']);
+    }
+
+    #[Test]
+    public function event_form_saves_caption_type_none(): void
+    {
+        $event = Event::factory()->create([
+            'settings' => ['enable_checkout' => false, 'operator_display_fields' => ['name']],
+        ]);
+
+        Livewire::actingAs($this->admin)
+            ->test(\App\Livewire\AdminEventForm::class, ['event' => $event])
+            ->set('printCaptionType', 'none')
+            ->call('save');
+
+        $this->assertSame('none', $event->fresh()->settings['print_caption_field']);
+    }
+
+    #[Test]
+    public function event_form_saves_caption_type_meta_with_key(): void
+    {
+        $event = Event::factory()->create([
+            'settings' => ['enable_checkout' => false, 'operator_display_fields' => ['name']],
+        ]);
+
+        Livewire::actingAs($this->admin)
+            ->test(\App\Livewire\AdminEventForm::class, ['event' => $event])
+            ->set('printCaptionType', 'meta')
+            ->set('printCaptionMetaKey', 'jabatan')
+            ->call('save');
+
+        $this->assertSame('meta.jabatan', $event->fresh()->settings['print_caption_field']);
+    }
+
+    #[Test]
+    public function event_form_requires_meta_key_when_caption_type_is_meta(): void
+    {
+        $event = Event::factory()->create([
+            'settings' => ['enable_checkout' => false, 'operator_display_fields' => ['name']],
+        ]);
+
+        Livewire::actingAs($this->admin)
+            ->test(\App\Livewire\AdminEventForm::class, ['event' => $event])
+            ->set('printCaptionType', 'meta')
+            ->set('printCaptionMetaKey', '')
+            ->call('save')
+            ->assertHasErrors(['printCaptionMetaKey']);
+    }
+
+    #[Test]
+    public function event_form_loads_existing_meta_caption_field(): void
+    {
+        $event = Event::factory()->create([
+            'settings' => [
+                'enable_checkout' => false,
+                'operator_display_fields' => ['name'],
+                'print_caption_field' => 'meta.institusi',
+            ],
+        ]);
+
+        $component = Livewire::actingAs($this->admin)
+            ->test(\App\Livewire\AdminEventForm::class, ['event' => $event]);
+
+        $component->assertSet('printCaptionType', 'meta');
+        $component->assertSet('printCaptionMetaKey', 'institusi');
+    }
+
+    // ── Caption field — PDF rendering ─────────────────────────────────────────
+
+    #[Test]
+    public function individual_print_with_caption_invitation_code_returns_pdf(): void
+    {
+        Storage::fake('public');
+
+        $image = UploadedFile::fake()->image('bg.jpg', 800, 1050);
+        $imagePath = $image->store('print-templates', 'public');
+
+        $template = PrintTemplate::factory()->create([
+            'background_image_path' => $imagePath,
+            'page_width_mm' => 80,
+            'page_height_mm' => 105,
+            'qr_x_mm' => 20,
+            'qr_y_mm' => 30,
+            'qr_w_mm' => 40,
+            'qr_h_mm' => 40,
+        ]);
+
+        $event = Event::factory()->create([
+            'settings' => [
+                'print_template_id' => $template->id,
+                'print_caption_field' => 'invitation_code',
+            ],
+        ]);
+
+        $ep = EventParticipant::factory()->for($event)->create();
+        Invitation::factory()->for($ep, 'eventParticipant')->create([
+            'token' => Str::random(32),
+            'invitation_code' => 'TEST-0001',
+        ]);
+
+        $this->actingAs($this->admin)
+            ->get(route('admin.events.participants.card', [$event, $ep]))
+            ->assertOk()
+            ->assertHeader('content-type', 'application/pdf');
+    }
+
+    #[Test]
+    public function individual_print_with_caption_none_returns_pdf(): void
+    {
+        Storage::fake('public');
+
+        $image = UploadedFile::fake()->image('bg.jpg', 800, 1050);
+        $imagePath = $image->store('print-templates', 'public');
+
+        $template = PrintTemplate::factory()->create([
+            'background_image_path' => $imagePath,
+            'page_width_mm' => 80,
+            'page_height_mm' => 105,
+            'qr_x_mm' => 20,
+            'qr_y_mm' => 30,
+            'qr_w_mm' => 40,
+            'qr_h_mm' => 40,
+        ]);
+
+        $event = Event::factory()->create([
+            'settings' => [
+                'print_template_id' => $template->id,
+                'print_caption_field' => 'none',
+            ],
+        ]);
+
+        $ep = EventParticipant::factory()->for($event)->create();
+        Invitation::factory()->for($ep, 'eventParticipant')->create([
+            'token' => Str::random(32),
+        ]);
+
+        $this->actingAs($this->admin)
+            ->get(route('admin.events.participants.card', [$event, $ep]))
+            ->assertOk()
+            ->assertHeader('content-type', 'application/pdf');
+    }
+
+    #[Test]
+    public function individual_print_with_caption_meta_key_returns_pdf(): void
+    {
+        Storage::fake('public');
+
+        $image = UploadedFile::fake()->image('bg.jpg', 800, 1050);
+        $imagePath = $image->store('print-templates', 'public');
+
+        $template = PrintTemplate::factory()->create([
+            'background_image_path' => $imagePath,
+            'page_width_mm' => 80,
+            'page_height_mm' => 105,
+            'qr_x_mm' => 20,
+            'qr_y_mm' => 30,
+            'qr_w_mm' => 40,
+            'qr_h_mm' => 40,
+        ]);
+
+        $event = Event::factory()->create([
+            'settings' => [
+                'print_template_id' => $template->id,
+                'print_caption_field' => 'meta.jabatan',
+            ],
+        ]);
+
+        $ep = EventParticipant::factory()->for($event)->create([
+        ]);
+        $ep->participant->update(['meta' => ['jabatan' => 'Ketua Panitia']]);
+
+        Invitation::factory()->for($ep, 'eventParticipant')->create([
+            'token' => Str::random(32),
+        ]);
+
+        $this->actingAs($this->admin)
+            ->get(route('admin.events.participants.card', [$event, $ep]))
+            ->assertOk()
+            ->assertHeader('content-type', 'application/pdf');
+    }
 }

@@ -36,6 +36,8 @@ class InvitationCardController extends Controller
 
         $count = 0;
 
+        $captionField = $this->resolveCaptionField($event->settings['print_caption_field'] ?? 'name');
+
         EventParticipant::query()
             ->with(['participant', 'invitation'])
             ->join('participants', 'event_participants.participant_id', '=', 'participants.id')
@@ -45,11 +47,11 @@ class InvitationCardController extends Controller
             ->select('event_participants.*')
             ->orderBy('participants.name')
             ->get()
-            ->each(function ($ep) use ($pdf, $event, $template, &$count): void {
+            ->each(function ($ep) use ($pdf, $event, $template, $captionField, &$count): void {
                 $pdf->AddPage();
 
                 if ($template) {
-                    $this->addTemplateCard($pdf, $ep, $template);
+                    $this->addTemplateCard($pdf, $ep, $template, $captionField);
                 } else {
                     $this->addElegantCard($pdf, $event, $ep);
                 }
@@ -84,7 +86,7 @@ class InvitationCardController extends Controller
         $templateId = $event->settings['print_template_id'] ?? null;
 
         if ($templateId && $template = PrintTemplate::find($templateId)) {
-            return $this->printWithTemplate($event, $eventParticipant, $template);
+            return $this->printWithTemplate($event, $eventParticipant, $template, $event->settings['print_caption_field'] ?? 'name');
         }
 
         $qrSvg = QrCode::format('svg')
@@ -103,14 +105,14 @@ class InvitationCardController extends Controller
     /**
      * Render a custom-template PDF for one participant (individual print).
      */
-    private function printWithTemplate(Event $event, EventParticipant $ep, PrintTemplate $template): Response
+    private function printWithTemplate(Event $event, EventParticipant $ep, PrintTemplate $template, string $rawCaptionField = 'name'): Response
     {
         $pdf = new FpdfExtended('P', 'mm', [$template->page_width_mm, $template->page_height_mm]);
         $pdf->SetMargins(0, 0, 0);
         $pdf->SetAutoPageBreak(false);
         $pdf->AddPage();
 
-        $this->addTemplateCard($pdf, $ep, $template);
+        $this->addTemplateCard($pdf, $ep, $template, $this->resolveCaptionField($rawCaptionField));
 
         $slug = str($ep->participant->name)->slug();
         $filename = "undangan-{$slug}.pdf";
@@ -122,8 +124,10 @@ class InvitationCardController extends Controller
 
     /**
      * Draw one template-based card onto an existing PDF instance.
+     *
+     * @param  string  $captionField  Resolved caption field: 'name'|'invitation_code'|'phone'|'none'|'meta.{key}'
      */
-    private function addTemplateCard(FpdfExtended $pdf, EventParticipant $ep, PrintTemplate $template): void
+    private function addTemplateCard(FpdfExtended $pdf, EventParticipant $ep, PrintTemplate $template, string $captionField = 'name'): void
     {
         $invitation = $ep->invitation;
         $bgPath = Storage::disk('public')->path($template->background_image_path);
@@ -149,13 +153,50 @@ class InvitationCardController extends Controller
         $pdf->Image($tmpFile, $template->qr_x_mm, $template->qr_y_mm, $template->qr_w_mm, $template->qr_h_mm, 'PNG');
         @unlink($tmpFile);
 
-        // Nama peserta di bawah QR
-        $encode = fn (string $text): string => iconv('UTF-8', 'windows-1252//TRANSLIT//IGNORE', $text) ?: $text;
-        $nameY = $template->qr_y_mm + $template->qr_h_mm + 1;
-        $pdf->SetFont('Arial', 'B', 10);
-        $pdf->SetTextColor(0, 0, 0);
-        $pdf->SetXY($template->qr_x_mm - $padding, $nameY);
-        $pdf->Cell($template->qr_w_mm + $padding * 2, 6, $encode($ep->participant->name), 0, 0, 'C');
+        $caption = $this->resolveCaption($captionField, $ep);
+
+        if ($caption !== null && $caption !== '') {
+            $encode = fn (string $text): string => iconv('UTF-8', 'windows-1252//TRANSLIT//IGNORE', $text) ?: $text;
+            $captionY = $template->qr_y_mm + $template->qr_h_mm + 1;
+            $pdf->SetFont('Courier', 'B', 9);
+            $pdf->SetTextColor(0, 0, 0);
+            $pdf->SetFillColor(255, 255, 255);
+            $pdf->SetXY($template->qr_x_mm - $padding, $captionY);
+            $pdf->Cell($template->qr_w_mm + $padding * 2, 6, $encode($caption), 0, 0, 'C', true);
+        }
+    }
+
+    /**
+     * Normalize the raw caption field value from settings, defaulting unknown values to 'name'.
+     */
+    private function resolveCaptionField(string $raw): string
+    {
+        $known = ['name', 'invitation_code', 'phone', 'none'];
+
+        if (in_array($raw, $known, true) || str_starts_with($raw, 'meta.')) {
+            return $raw;
+        }
+
+        return 'name';
+    }
+
+    /**
+     * Resolve the caption string for a participant given a caption field key.
+     */
+    private function resolveCaption(string $captionField, EventParticipant $ep): ?string
+    {
+        return match (true) {
+            $captionField === 'name' => $ep->participant->name,
+            $captionField === 'invitation_code' => $ep->invitation?->invitation_code ?? '',
+            $captionField === 'phone' => $ep->participant->phone_e164 ?? '',
+            $captionField === 'none' => null,
+            str_starts_with($captionField, 'meta.') => (string) data_get(
+                $ep->participant->meta,
+                substr($captionField, 5),
+                ''
+            ),
+            default => $ep->participant->name,
+        };
     }
 
     // ── Sticker sheet PDF ────────────────────────────────────────────────────

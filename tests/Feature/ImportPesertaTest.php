@@ -159,6 +159,34 @@ class ImportPesertaTest extends TestCase
         $this->assertEquals(1, $result['errors']);
     }
 
+    #[Test]
+    public function reimport_updates_meta_for_already_enrolled_participant(): void
+    {
+        $csv1 = "nama,no_hp\nBudi,08123456789\n";
+        (new ImportPesertaAction)->execute($this->event, $this->writeTempCsv($csv1));
+
+        $csv2 = "nama,no_hp,jabatan\nBudi,08123456789,Manager\n";
+        $result = (new ImportPesertaAction)->execute($this->event, $this->writeTempCsv($csv2));
+
+        $this->assertEquals(1, $result['skipped']);
+        $this->assertEquals('Manager', Participant::first()->meta['jabatan']);
+    }
+
+    #[Test]
+    public function reimport_updates_meta_for_existing_participant_not_yet_enrolled(): void
+    {
+        $event2 = Event::factory()->create();
+
+        $csv1 = "nama,no_hp\nBudi,08123456789\n";
+        (new ImportPesertaAction)->execute($this->event, $this->writeTempCsv($csv1));
+
+        $csv2 = "nama,no_hp,unit\nBudi,08123456789,IT\n";
+        $result = (new ImportPesertaAction)->execute($event2, $this->writeTempCsv($csv2));
+
+        $this->assertEquals(1, $result['imported']);
+        $this->assertEquals('IT', Participant::first()->meta['unit']);
+    }
+
     // ── Livewire component ─────────────────────────────────────────────────
 
     #[Test]

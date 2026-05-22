@@ -57,19 +57,6 @@ class ImportPesertaAction
             // Check if this phone is already enrolled in the event.
             $existingParticipant = Participant::where('phone_e164', $phoneE164)->first();
 
-            if ($existingParticipant) {
-                $alreadyEnrolled = EventParticipant::where('event_id', $event->id)
-                    ->where('participant_id', $existingParticipant->id)
-                    ->exists();
-
-                if ($alreadyEnrolled) {
-                    $skipped++;
-                    $skippedRows[] = ['baris' => $rowNum, 'nama' => $nama, 'no_hp' => $phoneE164];
-
-                    continue;
-                }
-            }
-
             // Collect extra columns as meta.
             $reservedKeys = ['nama', 'no_hp'];
             $meta = [];
@@ -82,10 +69,35 @@ class ImportPesertaAction
                 }
             }
 
+            if ($existingParticipant) {
+                $alreadyEnrolled = EventParticipant::where('event_id', $event->id)
+                    ->where('participant_id', $existingParticipant->id)
+                    ->exists();
+
+                if ($alreadyEnrolled) {
+                    if (! empty($meta)) {
+                        $existingParticipant->update([
+                            'meta' => array_merge($existingParticipant->meta ?? [], $meta),
+                        ]);
+                    }
+
+                    $skipped++;
+                    $skippedRows[] = ['baris' => $rowNum, 'nama' => $nama, 'no_hp' => $phoneE164];
+
+                    continue;
+                }
+            }
+
             $participant = Participant::firstOrCreate(
                 ['phone_e164' => $phoneE164],
                 ['name' => $nama, 'meta' => empty($meta) ? null : $meta],
             );
+
+            if (! $participant->wasRecentlyCreated && ! empty($meta)) {
+                $participant->update([
+                    'meta' => array_merge($participant->meta ?? [], $meta),
+                ]);
+            }
 
             $enrollment = EventParticipant::create([
                 'event_id' => $event->id,

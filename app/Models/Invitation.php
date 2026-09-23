@@ -27,6 +27,7 @@ class Invitation extends Model
     protected function casts(): array
     {
         return [
+            'token' => 'encrypted',
             'issued_at' => 'datetime',
             'expires_at' => 'datetime',
             'revoked_at' => 'datetime',

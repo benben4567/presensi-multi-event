@@ -17,6 +17,7 @@ use App\Models\ScanAttempt;
 use App\Models\User;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -142,6 +143,18 @@ class ModelRelationshipTest extends TestCase
         $this->assertTrue($active->isValid());
         $this->assertFalse($revoked->isValid());
         $this->assertFalse($expired->isValid());
+    }
+
+    #[Test]
+    public function invitation_token_is_encrypted_at_rest(): void
+    {
+        $rawToken = 'plaintext-raw-token-value';
+        $invitation = Invitation::factory()->create(['token' => $rawToken]);
+
+        $storedValue = DB::table('invitations')->where('id', $invitation->id)->value('token');
+
+        $this->assertNotSame($rawToken, $storedValue);
+        $this->assertSame($rawToken, $invitation->fresh()->token);
     }
 
     #[Test]

@@ -2,7 +2,6 @@
 
 use App\Http\Controllers\InvitationCardController;
 use App\Http\Controllers\LaporanExportController;
-use App\Http\Controllers\ProfileController;
 use App\Livewire\AdminDashboard;
 use App\Livewire\AdminEnrollmentList;
 use App\Livewire\AdminEventForm;
@@ -19,6 +18,7 @@ use App\Livewire\AdminUserIndex;
 use App\Livewire\OpsEventManual;
 use App\Livewire\OpsEventScan;
 use App\Livewire\Panduan;
+use App\Livewire\ProfileEdit;
 use App\Models\EventParticipant;
 use Illuminate\Support\Facades\Route;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
@@ -98,11 +98,7 @@ Route::middleware(['auth', 'role:operator'])
         Route::get('/panduan', Panduan::class)->name('panduan');
     });
 
-// ─── Profile (Breeze) ───────────────────────────────────────────────────────
-Route::middleware('auth')->group(function (): void {
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-});
+// ─── Profile ────────────────────────────────────────────────────────────────
+Route::get('/profile', ProfileEdit::class)->middleware('auth')->name('profile.edit');
 
 require __DIR__.'/auth.php';

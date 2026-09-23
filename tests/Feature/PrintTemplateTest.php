@@ -107,6 +107,38 @@ class PrintTemplateTest extends TestCase
         ]);
     }
 
+    // ── Canvas → Livewire sync (applyCanvasValues, called from Alpine on submit) ─
+
+    #[Test]
+    public function apply_canvas_values_updates_dimension_properties(): void
+    {
+        Storage::fake('public');
+
+        Livewire::actingAs($this->admin)
+            ->test(AdminPrintTemplateForm::class)
+            ->set('name', 'Template Canvas')
+            ->set('photo', UploadedFile::fake()->image('bg.jpg'))
+            ->call('applyCanvasValues', 90, 120, 15.5, 25.5, 35.5, 45.5)
+            ->assertSet('pageWidthMm', 90)
+            ->assertSet('pageHeightMm', 120)
+            ->assertSet('qrXMm', 15.5)
+            ->assertSet('qrYMm', 25.5)
+            ->assertSet('qrWMm', 35.5)
+            ->assertSet('qrHMm', 45.5)
+            ->call('save')
+            ->assertDispatched('toast');
+
+        $this->assertDatabaseHas('print_templates', [
+            'name' => 'Template Canvas',
+            'page_width_mm' => 90,
+            'page_height_mm' => 120,
+            'qr_x_mm' => 15.5,
+            'qr_y_mm' => 25.5,
+            'qr_w_mm' => 35.5,
+            'qr_h_mm' => 45.5,
+        ]);
+    }
+
     // ── Validation ────────────────────────────────────────────────────────────
 
     #[Test]

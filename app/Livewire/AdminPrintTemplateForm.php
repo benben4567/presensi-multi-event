@@ -53,6 +53,26 @@ class AdminPrintTemplateForm extends Component
         }
     }
 
+    /**
+     * Pull the canvas-edited values (Alpine local state) into the Livewire
+     * properties right before validating/saving.
+     */
+    public function applyCanvasValues(
+        int $pageWidthMm,
+        int $pageHeightMm,
+        float $qrXMm,
+        float $qrYMm,
+        float $qrWMm,
+        float $qrHMm,
+    ): void {
+        $this->pageWidthMm = $pageWidthMm;
+        $this->pageHeightMm = $pageHeightMm;
+        $this->qrXMm = $qrXMm;
+        $this->qrYMm = $qrYMm;
+        $this->qrWMm = $qrWMm;
+        $this->qrHMm = $qrHMm;
+    }
+
     public function save(): void
     {
         $rules = [

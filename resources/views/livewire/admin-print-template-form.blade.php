@@ -1,8 +1,15 @@
-<div>
+<div
+    x-data="qrCanvas(@js($pageWidthMm), @js($pageHeightMm), @js($qrXMm), @js($qrYMm), @js($qrWMm), @js($qrHMm))"
+    x-init="init()"
+    @mousemove.window="onMouseMove($event)"
+    @mouseup.window="stopDrag()"
+    @touchmove.window.prevent="onTouchMove($event)"
+    @touchend.window="stopDrag()"
+>
     <x-ui.header :title="$templateId ? 'Edit Template Cetak' : 'Tambah Template Cetak'">
         <x-slot:actions>
             <x-ui.button href="{{ route('admin.print-templates.index') }}">Batal</x-ui.button>
-            <x-ui.button wire:click="save" variant="primary">Simpan</x-ui.button>
+            <x-ui.button x-on:click="submit()" variant="primary">Simpan</x-ui.button>
         </x-slot:actions>
     </x-ui.header>
 
@@ -82,12 +89,12 @@
                         <div class="flex items-center gap-3">
                             <div class="flex-1">
                                 <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Lebar</label>
-                                <x-ui.input type="number" wire:model.live="pageWidthMm" min="50" max="300" />
+                                <x-ui.input type="number" x-model.number="pageWMm" min="50" max="300" />
                             </div>
                             <span class="text-gray-400 mt-5">×</span>
                             <div class="flex-1">
                                 <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Tinggi</label>
-                                <x-ui.input type="number" wire:model.live="pageHeightMm" min="50" max="400" />
+                                <x-ui.input type="number" x-model.number="pageHMm" min="50" max="400" />
                             </div>
                         </div>
                     </div>
@@ -104,28 +111,28 @@
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Posisi X (mm)</label>
-                        <x-ui.input type="number" wire:model.live="qrXMm" step="0.5" min="0" />
+                        <x-ui.input type="number" x-model.number="qrXMm" step="0.5" min="0" />
                         @error('qrXMm')
                             <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ $message }}</p>
                         @enderror
                     </div>
                     <div>
                         <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Posisi Y (mm)</label>
-                        <x-ui.input type="number" wire:model.live="qrYMm" step="0.5" min="0" />
+                        <x-ui.input type="number" x-model.number="qrYMm" step="0.5" min="0" />
                         @error('qrYMm')
                             <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ $message }}</p>
                         @enderror
                     </div>
                     <div>
                         <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Lebar (mm) <span class="text-red-400">min 30</span></label>
-                        <x-ui.input type="number" wire:model.live="qrWMm" step="0.5" min="30" />
+                        <x-ui.input type="number" x-model.number="qrWMm" step="0.5" min="30" />
                         @error('qrWMm')
                             <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ $message }}</p>
                         @enderror
                     </div>
                     <div>
                         <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Tinggi (mm) <span class="text-red-400">min 30</span></label>
-                        <x-ui.input type="number" wire:model.live="qrHMm" step="0.5" min="30" />
+                        <x-ui.input type="number" x-model.number="qrHMm" step="0.5" min="30" />
                         @error('qrHMm')
                             <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ $message }}</p>
                         @enderror
@@ -149,14 +156,7 @@
             </p>
 
             {{-- Canvas area --}}
-            <div
-                x-data="qrCanvas(@js($pageWidthMm), @js($pageHeightMm), @js($qrXMm), @js($qrYMm), @js($qrWMm), @js($qrHMm))"
-                x-init="init()"
-                @mousemove.window="onMouseMove($event)"
-                @mouseup.window="stopDrag()"
-                @touchmove.window.prevent="onTouchMove($event)"
-                @touchend.window="stopDrag()"
-            >
+            <div>
                 {{-- Wrapper to scale canvas to fit the column --}}
                 <div class="flex justify-center">
                     <div
@@ -213,7 +213,7 @@
                                 <span
                                     class="text-blue-700 font-mono bg-blue-50/80 px-1 rounded-sm"
                                     :style="`font-size: ${Math.max(8, scale * 3)}px;`"
-                                    x-text="`${qrWMm.toFixed(1)}×${qrHMm.toFixed(1)} mm`"
+                                    x-text="`${(Number(qrWMm) || 0).toFixed(1)}×${(Number(qrHMm) || 0).toFixed(1)} mm`"
                                 ></span>
                             </div>
 
@@ -262,23 +262,39 @@ Alpine.data('qrCanvas', (pageWMm, pageHMm, initX, initY, initW, initH) => ({
     _drag: null,
 
     init() {
-        // Scale to fit ~300px wide
-        this.scale = Math.min(3, Math.floor(300 / pageWMm * 10) / 10);
-        this.canvasW = Math.round(pageWMm * this.scale);
-        this.canvasH = Math.round(pageHMm * this.scale);
+        this.recalc();
+
+        // Page size inputs affect scale/canvas dims, so the QR box needs a
+        // full recompute; QR coordinate inputs only shift the box itself.
+        this.$watch('pageWMm', () => this.recalc());
+        this.$watch('pageHMm', () => this.recalc());
+        this.$watch('qrXMm', () => this.recalcQrPx());
+        this.$watch('qrYMm', () => this.recalcQrPx());
+        this.$watch('qrWMm', () => this.recalcQrPx());
+        this.$watch('qrHMm', () => this.recalcQrPx());
+    },
+
+    recalc() {
+        // Scale to fit ~300px wide. Guard against NaN/0 while the width
+        // field is mid-edit (e.g. briefly empty as the user retypes it).
+        const w = Math.max(1, Number(this.pageWMm) || 1);
+        const h = Math.max(1, Number(this.pageHMm) || 1);
+
+        this.scale = Math.min(3, Math.floor(300 / w * 10) / 10);
+        this.canvasW = Math.round(w * this.scale);
+        this.canvasH = Math.round(h * this.scale);
         this.minSizePx = 30 * this.scale;
 
-        this.qr = {
-            x: this.qrXMm * this.scale,
-            y: this.qrYMm * this.scale,
-            w: this.qrWMm * this.scale,
-            h: this.qrHMm * this.scale,
-        };
+        this.recalcQrPx();
+    },
 
-        this.$watch('qrXMm', v => { this.qr.x = v * this.scale; });
-        this.$watch('qrYMm', v => { this.qr.y = v * this.scale; });
-        this.$watch('qrWMm', v => { this.qr.w = v * this.scale; });
-        this.$watch('qrHMm', v => { this.qr.h = v * this.scale; });
+    recalcQrPx() {
+        this.qr = {
+            x: (Number(this.qrXMm) || 0) * this.scale,
+            y: (Number(this.qrYMm) || 0) * this.scale,
+            w: (Number(this.qrWMm) || 0) * this.scale,
+            h: (Number(this.qrHMm) || 0) * this.scale,
+        };
     },
 
     _eventXY(e) {
@@ -361,9 +377,7 @@ Alpine.data('qrCanvas', (pageWMm, pageHMm, initX, initY, initW, initH) => ({
     },
 
     stopDrag() {
-        if (!this._drag) return;
         this._drag = null;
-        this._pushToLivewire();
     },
 
     _syncMm() {
@@ -373,11 +387,19 @@ Alpine.data('qrCanvas', (pageWMm, pageHMm, initX, initY, initW, initH) => ({
         this.qrHMm = parseFloat((this.qr.h / this.scale).toFixed(2));
     },
 
-    _pushToLivewire() {
-        this.$wire.set('qrXMm', this.qrXMm);
-        this.$wire.set('qrYMm', this.qrYMm);
-        this.$wire.set('qrWMm', this.qrWMm);
-        this.$wire.set('qrHMm', this.qrHMm);
+    async submit() {
+        // Alpine holds the live-edited values; push them into the Livewire
+        // properties in one round trip, then validate/save.
+        await this.$wire.applyCanvasValues(
+            Math.round(Number(this.pageWMm) || 0),
+            Math.round(Number(this.pageHMm) || 0),
+            Number(this.qrXMm) || 0,
+            Number(this.qrYMm) || 0,
+            Number(this.qrWMm) || 0,
+            Number(this.qrHMm) || 0,
+        );
+
+        this.$wire.save();
     },
 }));
 </script>

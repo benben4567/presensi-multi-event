@@ -56,7 +56,7 @@
                             </div>
                         @endif
 
-                        @if ($photo)
+                        @if ($photo && $photo->isPreviewable())
                             <div class="mb-2">
                                 <img
                                     src="{{ $photo->temporaryUrl() }}"
@@ -77,6 +77,19 @@
                                    dark:file:bg-gray-700 dark:file:text-gray-300
                                    hover:file:bg-gray-200 dark:hover:file:bg-gray-600"
                         />
+
+                        <div wire:loading wire:target="photo" class="flex items-center gap-1.5 mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                            <svg class="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                            </svg>
+                            Mengunggah gambar...
+                        </div>
+
+                        <p class="mt-1.5 text-xs text-gray-400 dark:text-gray-500">
+                            Format JPG/PNG, maksimal {{ number_format(\App\Livewire\AdminPrintTemplateForm::MAX_PHOTO_KB / 1024, 0) }} MB.
+                        </p>
+
                         @error('photo')
                             <p class="mt-1.5 text-xs text-red-600 dark:text-red-400">{{ $message }}</p>
                         @enderror
@@ -165,7 +178,7 @@
                         x-ref="canvas"
                     >
                         {{-- Background image --}}
-                        @if ($photo)
+                        @if ($photo && $photo->isPreviewable())
                             <img
                                 src="{{ $photo->temporaryUrl() }}"
                                 class="absolute inset-0 w-full h-full object-fill pointer-events-none"

@@ -156,6 +156,28 @@ class PrintTemplateTest extends TestCase
     }
 
     #[Test]
+    public function photo_error_surfaces_immediately_on_selection_not_only_on_save(): void
+    {
+        Storage::fake('public');
+
+        Livewire::actingAs($this->admin)
+            ->test(AdminPrintTemplateForm::class)
+            ->set('photo', UploadedFile::fake()->create('doc.pdf', 100))
+            ->assertHasErrors(['photo' => 'image']);
+    }
+
+    #[Test]
+    public function photo_over_max_size_fails_immediately_on_selection(): void
+    {
+        Storage::fake('public');
+
+        Livewire::actingAs($this->admin)
+            ->test(AdminPrintTemplateForm::class)
+            ->set('photo', UploadedFile::fake()->image('bg.jpg')->size(6000))
+            ->assertHasErrors(['photo' => 'max']);
+    }
+
+    #[Test]
     public function validation_fails_when_photo_is_missing_on_create(): void
     {
         Livewire::actingAs($this->admin)

@@ -17,6 +17,8 @@ class AdminPrintTemplateForm extends Component
 {
     use WithFileUploads;
 
+    public const MAX_PHOTO_KB = 5120;
+
     public ?int $templateId = null;
 
     public string $name = '';
@@ -73,6 +75,15 @@ class AdminPrintTemplateForm extends Component
         $this->qrHMm = $qrHMm;
     }
 
+    /**
+     * Validate the photo as soon as it's selected, instead of only surfacing
+     * errors after the user scrolls up and clicks "Simpan".
+     */
+    public function updatedPhoto(): void
+    {
+        $this->validateOnly('photo', ['photo' => $this->photoRules()], $this->messages());
+    }
+
     public function save(): void
     {
         $rules = [
@@ -83,25 +94,10 @@ class AdminPrintTemplateForm extends Component
             'qrYMm' => ['required', 'numeric', 'min:0'],
             'qrWMm' => ['required', 'numeric', 'min:30'],
             'qrHMm' => ['required', 'numeric', 'min:30'],
+            'photo' => $this->photoRules(),
         ];
 
-        if ($this->templateId === null) {
-            $rules['photo'] = ['required', 'image', 'mimes:jpg,jpeg,png', 'max:5120'];
-        } else {
-            $rules['photo'] = ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:5120'];
-        }
-
-        $this->validate($rules, [
-            'name.required' => 'Nama template wajib diisi.',
-            'photo.required' => 'Gambar latar wajib diunggah.',
-            'photo.image' => 'File harus berupa gambar.',
-            'photo.mimes' => 'Format gambar harus JPG atau PNG.',
-            'photo.max' => 'Ukuran gambar maksimal 5 MB.',
-            'qrWMm.min' => 'Lebar area QR minimal 30 mm.',
-            'qrHMm.min' => 'Tinggi area QR minimal 30 mm.',
-            'qrXMm.min' => 'Posisi X area QR tidak boleh negatif.',
-            'qrYMm.min' => 'Posisi Y area QR tidak boleh negatif.',
-        ]);
+        $this->validate($rules, $this->messages());
 
         // Validate QR area stays within page bounds
         if ($this->qrXMm + $this->qrWMm > $this->pageWidthMm) {
@@ -156,5 +152,29 @@ class AdminPrintTemplateForm extends Component
     public function render(): \Illuminate\View\View
     {
         return view('livewire.admin-print-template-form');
+    }
+
+    /** @return list<string> */
+    private function photoRules(): array
+    {
+        $required = $this->templateId === null ? 'required' : 'nullable';
+
+        return [$required, 'image', 'mimes:jpg,jpeg,png', 'max:'.self::MAX_PHOTO_KB];
+    }
+
+    /** @return array<string, string> */
+    private function messages(): array
+    {
+        return [
+            'name.required' => 'Nama template wajib diisi.',
+            'photo.required' => 'Gambar latar wajib diunggah.',
+            'photo.image' => 'File harus berupa gambar.',
+            'photo.mimes' => 'Format gambar harus JPG atau PNG.',
+            'photo.max' => 'Ukuran gambar maksimal 5 MB.',
+            'qrWMm.min' => 'Lebar area QR minimal 30 mm.',
+            'qrHMm.min' => 'Tinggi area QR minimal 30 mm.',
+            'qrXMm.min' => 'Posisi X area QR tidak boleh negatif.',
+            'qrYMm.min' => 'Posisi Y area QR tidak boleh negatif.',
+        ];
     }
 }

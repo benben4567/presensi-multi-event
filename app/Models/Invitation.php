@@ -48,14 +48,16 @@ class Invitation extends Model
         return $this->revoked_at !== null;
     }
 
-    public function isExpired(): bool
+    public function isExpired(?Event $event = null): bool
     {
-        return now()->isAfter($this->expires_at);
+        $event ??= $this->eventParticipant->event;
+
+        return ! $event->isAttendanceOpen();
     }
 
-    public function isValid(): bool
+    public function isValid(?Event $event = null): bool
     {
-        return ! $this->isRevoked() && ! $this->isExpired();
+        return ! $this->isRevoked() && ! $this->isExpired($event);
     }
 
     /**

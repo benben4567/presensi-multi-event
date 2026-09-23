@@ -129,10 +129,15 @@ class ModelRelationshipTest extends TestCase
             'revoked_at' => now(),
         ]);
 
-        $expired = Invitation::factory()->create([
-            'expires_at' => now()->subDay(),
-            'revoked_at' => null,
+        $expiredEvent = Event::factory()->create([
+            'start_at' => now()->subDays(5),
+            'end_at' => now()->subDay(),
         ]);
+        $expired = Invitation::factory()
+            ->for(EventParticipant::factory()->for($expiredEvent), 'eventParticipant')
+            ->create([
+                'revoked_at' => null,
+            ]);
 
         $this->assertTrue($active->isValid());
         $this->assertFalse($revoked->isValid());

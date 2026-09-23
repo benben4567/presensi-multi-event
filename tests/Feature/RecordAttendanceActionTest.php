@@ -191,7 +191,7 @@ class RecordAttendanceActionTest extends TestCase
     #[Test]
     public function qr_expired_token_rejected(): void
     {
-        $this->invitation->update(['expires_at' => now()->subMinute()]);
+        $this->event->update(['end_at' => now()->subMinute()]);
 
         $result = $this->action->executeQr(
             $this->event,
@@ -230,7 +230,9 @@ class RecordAttendanceActionTest extends TestCase
     #[Test]
     public function qr_event_closed_rejected(): void
     {
-        $closedEvent = Event::factory()->closed()->create();
+        $closedEvent = Event::factory()->closed()->create([
+            'end_at' => now()->addDay(),
+        ]);
         $enrollment = EventParticipant::factory()->for($closedEvent)->create();
         $token = bin2hex(random_bytes(32));
 

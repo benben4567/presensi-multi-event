@@ -101,7 +101,7 @@ class RecordAttendanceAction
             return $this->rejected(ScanResultCode::TokenRevoked, 'QR telah dicabut', $enrollment);
         }
 
-        if ($invitation->isExpired()) {
+        if ($invitation->isExpired($event)) {
             $this->writeScanAttempt(
                 eventId: $event->id,
                 sessionId: $session->id,

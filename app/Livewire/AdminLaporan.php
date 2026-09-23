@@ -21,6 +21,10 @@ class AdminLaporan extends Component
 
     public ?int $sessionId = null;
 
+    public string $search = '';
+
+    public string $attendanceFilter = '';
+
     public function updatedEventId(): void
     {
         $this->sessionId = null;
@@ -28,6 +32,16 @@ class AdminLaporan extends Component
     }
 
     public function updatedSessionId(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedSearch(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedAttendanceFilter(): void
     {
         $this->resetPage();
     }
@@ -43,9 +57,26 @@ class AdminLaporan extends Component
         $rekap = collect();
 
         if ($this->eventId && $this->sessionId) {
+            $sessionId = $this->sessionId;
+
             $rekap = EventParticipant::query()
                 ->with('participant')
                 ->where('event_id', $this->eventId)
+                ->when($this->search, function ($query): void {
+                    $search = $this->search;
+                    $query->whereHas('participant', fn ($q) => $q
+                        ->where('name', 'like', "%{$search}%")
+                        ->orWhere('phone_e164', 'like', "%{$search}%")
+                    );
+                })
+                ->when($this->attendanceFilter === 'hadir', fn ($query) => $query->whereHas(
+                    'attendanceLogs',
+                    fn ($q) => $q->where('session_id', $sessionId)->where('action', AttendanceAction::CheckIn->value)
+                ))
+                ->when($this->attendanceFilter === 'tidak_hadir', fn ($query) => $query->whereDoesntHave(
+                    'attendanceLogs',
+                    fn ($q) => $q->where('session_id', $sessionId)->where('action', AttendanceAction::CheckIn->value)
+                ))
                 ->orderBy('id')
                 ->paginate(25)
                 ->through(function (EventParticipant $enrollment): EventParticipant {

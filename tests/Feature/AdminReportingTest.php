@@ -230,6 +230,60 @@ class AdminReportingTest extends TestCase
     }
 
     #[Test]
+    public function laporan_search_filters_by_name(): void
+    {
+        $other = EventParticipant::factory()->for($this->event)->create();
+
+        Livewire::actingAs($this->admin)
+            ->test(AdminLaporan::class)
+            ->set('eventId', $this->event->id)
+            ->set('sessionId', $this->session->id)
+            ->set('search', $this->enrollment->participant->name)
+            ->assertSee($this->enrollment->participant->name)
+            ->assertDontSee($other->participant->name);
+    }
+
+    #[Test]
+    public function laporan_attendance_filter_shows_only_hadir(): void
+    {
+        AttendanceLog::factory()->create([
+            'event_id' => $this->event->id,
+            'event_participant_id' => $this->enrollment->id,
+            'session_id' => $this->session->id,
+            'action' => AttendanceAction::CheckIn,
+        ]);
+        $absent = EventParticipant::factory()->for($this->event)->create();
+
+        Livewire::actingAs($this->admin)
+            ->test(AdminLaporan::class)
+            ->set('eventId', $this->event->id)
+            ->set('sessionId', $this->session->id)
+            ->set('attendanceFilter', 'hadir')
+            ->assertSee($this->enrollment->participant->name)
+            ->assertDontSee($absent->participant->name);
+    }
+
+    #[Test]
+    public function laporan_attendance_filter_shows_only_tidak_hadir(): void
+    {
+        AttendanceLog::factory()->create([
+            'event_id' => $this->event->id,
+            'event_participant_id' => $this->enrollment->id,
+            'session_id' => $this->session->id,
+            'action' => AttendanceAction::CheckIn,
+        ]);
+        $absent = EventParticipant::factory()->for($this->event)->create();
+
+        Livewire::actingAs($this->admin)
+            ->test(AdminLaporan::class)
+            ->set('eventId', $this->event->id)
+            ->set('sessionId', $this->session->id)
+            ->set('attendanceFilter', 'tidak_hadir')
+            ->assertDontSee($this->enrollment->participant->name)
+            ->assertSee($absent->participant->name);
+    }
+
+    #[Test]
     public function changing_event_on_laporan_resets_session(): void
     {
         $otherEvent = Event::factory()->open()->create([

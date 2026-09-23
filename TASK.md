@@ -22,7 +22,7 @@ Sumber: audit menyeluruh 2026-09-23 (kesesuaian plan, security, UX/fungsi).
 
 - [x] Tambah guard double-submit + label swap "Menyimpan..." konsisten di semua form Simpan — fixed 2026-09-23: `AdminEventForm`, `AdminUserForm`, `AdminPrintTemplateForm` (Alpine `saving` flag, bukan `wire:loading` karena submitnya lewat Alpine method), modal tambah/edit/blacklist peserta di `AdminEnrollmentList`
 - [x] Bulk action + filter status akses di `AdminEnrollmentList` — fixed 2026-09-23: dropdown filter status (Semua/Aktif/Nonaktif/Blacklist), checkbox per baris + "pilih semua" (pilih semua yang cocok filter/pencarian, bukan cuma halaman aktif), bulk Aktifkan/Nonaktifkan Terpilih
-- [ ] Search/filter di halaman Laporan (`AdminLaporan`)
+- [x] Search/filter di halaman Laporan (`AdminLaporan`) — fixed 2026-09-23: search nama/no HP + filter status kehadiran (Semua/Hadir/Tidak Hadir)
 
 ## UX — Prioritas rendah
 

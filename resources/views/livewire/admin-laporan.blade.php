@@ -34,6 +34,22 @@
                 </x-ui.select>
             </div>
         @endif
+
+        @if($eventId && $sessionId)
+            <div class="w-56">
+                <x-ui.input
+                    wire:model.live.debounce.300ms="search"
+                    placeholder="Cari nama atau nomor HP..."
+                />
+            </div>
+            <div class="w-48">
+                <x-ui.select wire:model.live="attendanceFilter">
+                    <option value="">Semua Status</option>
+                    <option value="hadir">Hadir</option>
+                    <option value="tidak_hadir">Tidak Hadir</option>
+                </x-ui.select>
+            </div>
+        @endif
     </div>
 
     {{-- ── Instruction / empty state ──────────────────────────────────── --}}

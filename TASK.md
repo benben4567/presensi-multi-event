@@ -28,4 +28,5 @@ Sumber: audit menyeluruh 2026-09-23 (kesesuaian plan, security, UX/fungsi).
 
 - [ ] Konsistensi timing validasi inline antar form admin
 - [ ] Filter tanggal di halaman monitoring/activity log
-- [ ] Ditemukan pas translate: `/register` publik masih aktif & reachable (siapa aja bisa bikin akun baru tanpa role — gak exploitable karena user tanpa role langsung mental balik ke login, tapi tetep nyampah data/rawan spam). Juga `/profile` masih pake layout Breeze default (`x-app-layout`), beda total dari `layouts.admin`/`layouts.ops` — gak ada link masuk dari nav manapun (halaman "mati", cuma bisa diakses ketik URL langsung). Pertimbangkan: matikan route register, atau restyle /profile pake layout app yang sebenernya.
+- [x] `/register` publik — fixed 2026-09-23: route dimatiin (dihapus dari `routes/auth.php`), `RegisteredUserController`, `auth/register.blade.php`, `welcome.blade.php` (juga orphan, gak ada route yang render), dan `RegistrationTest.php` (test fitur yang sengaja dimatiin) dihapus semua. Semua akun tetep dibuat admin lewat `AdminUserForm`.
+- [ ] `/profile` masih pake layout Breeze default (`x-app-layout`), beda total dari `layouts.admin`/`layouts.ops` — gak ada link masuk dari nav manapun (halaman "mati", cuma bisa diakses ketik URL langsung). Belum dikerjakan — restyle pake layout app yang sebenernya.

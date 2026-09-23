@@ -33,23 +33,35 @@ class AdminUserForm extends Component
         }
     }
 
-    public function save(): void
+    /** @return array<string, array<int, mixed>> */
+    private function rules(): array
     {
-        $rules = [
+        return [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255',
                 Rule::unique('users', 'email')->ignore($this->userId),
             ],
             'role' => ['required', Rule::in(['admin', 'operator'])],
+            'password' => $this->userId === null
+                ? ['required', 'string', 'min:8']
+                : ['nullable', 'string', 'min:8'],
         ];
+    }
 
-        if ($this->userId === null) {
-            $rules['password'] = ['required', 'string', 'min:8'];
-        } else {
-            $rules['password'] = ['nullable', 'string', 'min:8'];
+    /**
+     * Validate a single field as soon as the user leaves it (wire:model.blur),
+     * instead of only surfacing errors after clicking "Simpan".
+     */
+    public function updated(string $field): void
+    {
+        if (array_key_exists($field, $this->rules())) {
+            $this->validateOnly($field, $this->rules());
         }
+    }
 
-        $this->validate($rules);
+    public function save(): void
+    {
+        $this->validate($this->rules());
 
         if ($this->userId) {
             $user = User::findOrFail($this->userId);

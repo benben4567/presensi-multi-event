@@ -111,6 +111,16 @@ class AdminUserTest extends TestCase
     }
 
     #[Test]
+    public function name_field_validates_instantly_on_blur(): void
+    {
+        Livewire::actingAs($this->admin)
+            ->test(AdminUserForm::class)
+            ->set('name', '')
+            ->assertHasErrors('name')
+            ->assertHasNoErrors('email');
+    }
+
+    #[Test]
     public function create_requires_name_email_and_password(): void
     {
         Livewire::actingAs($this->admin)

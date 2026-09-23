@@ -84,6 +84,34 @@ class AdminMonitoringTest extends TestCase
             ->assertDontSee('Event dibuat');
     }
 
+    #[Test]
+    public function activity_log_date_filter_restricts_results(): void
+    {
+        $this->travelTo(now()->subDays(5));
+        activity()->log('Log lama');
+        $this->travelBack();
+
+        activity()->log('Log baru');
+
+        Livewire::actingAs($this->admin)
+            ->test(AdminMonitoringActivity::class)
+            ->set('dateFrom', now()->subDay()->toDateString())
+            ->assertSee('Log baru')
+            ->assertDontSee('Log lama');
+    }
+
+    #[Test]
+    public function reset_date_filter_clears_date_range(): void
+    {
+        Livewire::actingAs($this->admin)
+            ->test(AdminMonitoringActivity::class)
+            ->set('dateFrom', now()->toDateString())
+            ->set('dateTo', now()->toDateString())
+            ->call('resetDateFilter')
+            ->assertSet('dateFrom', '')
+            ->assertSet('dateTo', '');
+    }
+
     // ── Queue Monitor — access control ──────────────────────────────────────
 
     #[Test]

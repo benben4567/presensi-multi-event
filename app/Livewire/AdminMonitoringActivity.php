@@ -16,8 +16,28 @@ class AdminMonitoringActivity extends Component
 
     public string $search = '';
 
+    public string $dateFrom = '';
+
+    public string $dateTo = '';
+
     public function updatedSearch(): void
     {
+        $this->resetPage();
+    }
+
+    public function updatedDateFrom(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedDateTo(): void
+    {
+        $this->resetPage();
+    }
+
+    public function resetDateFilter(): void
+    {
+        $this->reset(['dateFrom', 'dateTo']);
         $this->resetPage();
     }
 
@@ -33,6 +53,8 @@ class AdminMonitoringActivity extends Component
                         ->orWhere('subject_type', 'like', "%{$term}%");
                 });
             })
+            ->when($this->dateFrom, fn ($q) => $q->whereDate('created_at', '>=', $this->dateFrom))
+            ->when($this->dateTo, fn ($q) => $q->whereDate('created_at', '<=', $this->dateTo))
             ->orderByDesc('created_at')
             ->paginate(25);
 

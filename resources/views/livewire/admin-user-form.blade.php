@@ -20,7 +20,7 @@
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                         Nama <span class="text-red-500">*</span>
                     </label>
-                    <x-ui.input wire:model="name" placeholder="Nama lengkap" />
+                    <x-ui.input wire:model.blur="name" placeholder="Nama lengkap" />
                     @error('name')
                         <p class="mt-1.5 text-xs text-red-600 dark:text-red-400">{{ $message }}</p>
                     @enderror
@@ -30,7 +30,7 @@
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                         Email <span class="text-red-500">*</span>
                     </label>
-                    <x-ui.input type="email" wire:model="email" placeholder="email@contoh.com" />
+                    <x-ui.input type="email" wire:model.blur="email" placeholder="email@contoh.com" />
                     @error('email')
                         <p class="mt-1.5 text-xs text-red-600 dark:text-red-400">{{ $message }}</p>
                     @enderror
@@ -45,7 +45,7 @@
                             <span class="text-red-500">*</span>
                         @endif
                     </label>
-                    <x-ui.input type="password" wire:model="password" placeholder="Minimal 8 karakter" />
+                    <x-ui.input type="password" wire:model.blur="password" placeholder="Minimal 8 karakter" />
                     @error('password')
                         <p class="mt-1.5 text-xs text-red-600 dark:text-red-400">{{ $message }}</p>
                     @enderror
@@ -55,7 +55,7 @@
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                         Role <span class="text-red-500">*</span>
                     </label>
-                    <x-ui.select wire:model="role" :disabled="$userId === auth()->id()">
+                    <x-ui.select wire:model.blur="role" :disabled="$userId === auth()->id()">
                         <option value="admin">Admin</option>
                         <option value="operator">Operator</option>
                     </x-ui.select>

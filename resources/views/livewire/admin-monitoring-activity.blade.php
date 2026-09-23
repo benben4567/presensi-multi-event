@@ -1,12 +1,27 @@
 <div>
     <x-ui.header title="Activity Log" />
 
-    {{-- ── Search ─────────────────────────────────────────────────────── --}}
-    <div class="mb-4 max-w-sm">
-        <x-ui.input
-            wire:model.live.debounce.300ms="search"
-            placeholder="Cari deskripsi, event, atau model..."
-        />
+    {{-- ── Search + filter tanggal ────────────────────────────────────── --}}
+    <div class="mb-4 flex flex-wrap items-end gap-3">
+        <div class="max-w-sm flex-1 min-w-[200px]">
+            <x-ui.input
+                wire:model.live.debounce.300ms="search"
+                placeholder="Cari deskripsi, event, atau model..."
+            />
+        </div>
+        <div>
+            <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Dari tanggal</label>
+            <x-ui.input type="date" wire:model.live="dateFrom" />
+        </div>
+        <div>
+            <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Sampai tanggal</label>
+            <x-ui.input type="date" wire:model.live="dateTo" />
+        </div>
+        @if($dateFrom || $dateTo)
+            <x-ui.button wire:click="resetDateFilter" size="sm">
+                Reset Tanggal
+            </x-ui.button>
+        @endif
     </div>
 
     {{-- ── Table ──────────────────────────────────────────────────────── --}}

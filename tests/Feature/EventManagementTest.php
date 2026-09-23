@@ -147,6 +147,16 @@ class EventManagementTest extends TestCase
     }
 
     #[Test]
+    public function name_field_validates_instantly_on_blur(): void
+    {
+        Livewire::actingAs($this->admin)
+            ->test(AdminEventForm::class)
+            ->set('name', '')
+            ->assertHasErrors('name')
+            ->assertHasNoErrors('startAt');
+    }
+
+    #[Test]
     public function create_event_fails_without_required_fields(): void
     {
         Livewire::actingAs($this->admin)

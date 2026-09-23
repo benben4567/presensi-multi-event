@@ -26,7 +26,7 @@ Sumber: audit menyeluruh 2026-09-23 (kesesuaian plan, security, UX/fungsi).
 
 ## UX — Prioritas rendah
 
-- [ ] Konsistensi timing validasi inline antar form admin
-- [ ] Filter tanggal di halaman monitoring/activity log
+- [x] Konsistensi timing validasi inline antar form admin — fixed 2026-09-23: `AdminEventForm` & `AdminUserForm` sekarang validasi per-field pas blur (`wire:model.blur` + hook generik `updated()`), samain pola sama `AdminPrintTemplateForm::updatedPhoto()`
+- [x] Filter tanggal di halaman monitoring/activity log — fixed 2026-09-23: filter "Dari tanggal"/"Sampai tanggal" + tombol reset di `AdminMonitoringActivity`
 - [x] `/register` publik — fixed 2026-09-23: route dimatiin (dihapus dari `routes/auth.php`), `RegisteredUserController`, `auth/register.blade.php`, `welcome.blade.php` (juga orphan, gak ada route yang render), dan `RegistrationTest.php` (test fitur yang sengaja dimatiin) dihapus semua. Semua akun tetep dibuat admin lewat `AdminUserForm`.
 - [x] `/profile` layout inconsistency — fixed 2026-09-23: dikonversi total dari 3 partial Blade + `ProfileController` (pola Breeze lama) jadi 1 komponen Livewire (`ProfileEdit`), pake `layouts.admin` buat admin / `layouts.ops` buat operator (dipilih dinamis dari role). Dead code ikut dibersihkan: `ProfileController`, `ProfileUpdateRequest`, `layouts/app.blade.php`, `layouts/navigation.blade.php`, `dashboard.blade.php` (ternyata juga orphan), `app/View/Components/AppLayout.php`.

@@ -74,9 +74,10 @@ class AdminEventForm extends Component
         }
     }
 
-    public function save(): void
+    /** @return array<string, array<int, mixed>> */
+    private function rules(): array
     {
-        $this->validate([
+        return [
             'code' => ['nullable', 'string', 'max:10',
                 Rule::unique('events', 'code')->ignore($this->eventId),
             ],
@@ -90,7 +91,23 @@ class AdminEventForm extends Component
             'extraDisplayFields' => ['nullable', 'string', 'max:500'],
             'printCaptionType' => ['required', Rule::in(['name', 'invitation_code', 'phone', 'none', 'meta'])],
             'printCaptionMetaKey' => ['required_if:printCaptionType,meta', 'nullable', 'string', 'max:100'],
-        ]);
+        ];
+    }
+
+    /**
+     * Validate a single field as soon as the user leaves it (wire:model.blur),
+     * instead of only surfacing errors after clicking "Simpan".
+     */
+    public function updated(string $field): void
+    {
+        if (array_key_exists($field, $this->rules())) {
+            $this->validateOnly($field, $this->rules());
+        }
+    }
+
+    public function save(): void
+    {
+        $this->validate($this->rules());
 
         $displayFields = $this->buildDisplayFields();
 

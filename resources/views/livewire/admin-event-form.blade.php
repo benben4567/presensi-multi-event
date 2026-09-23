@@ -25,7 +25,7 @@
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                             Nama Event <span class="text-red-500">*</span>
                         </label>
-                        <x-ui.input wire:model="name" placeholder="Contoh: Seminar Nasional 2026" />
+                        <x-ui.input wire:model.blur="name" placeholder="Contoh: Seminar Nasional 2026" />
                         @error('name')
                             <p class="mt-1.5 text-xs text-red-600 dark:text-red-400">{{ $message }}</p>
                         @enderror
@@ -36,7 +36,7 @@
                             Kode Event
                             <span class="text-gray-400 text-xs font-normal ml-1">(opsional, unik, maks. 10 karakter)</span>
                         </label>
-                        <x-ui.input wire:model="code" placeholder="Contoh: SN-2026" maxlength="10" />
+                        <x-ui.input wire:model.blur="code" placeholder="Contoh: SN-2026" maxlength="10" />
                         <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">
                             Wajib diisi untuk menggunakan <strong>Export Lembar Stiker</strong>. Biarkan kosong jika hanya butuh kartu undangan QR. Format kode undangan: <span class="font-mono">KODE-NNNN</span> — gunakan kode pendek agar terbaca di stiker 16&nbsp;mm.
                         </p>
@@ -50,7 +50,7 @@
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                                 Mulai <span class="text-red-500">*</span>
                             </label>
-                            <x-ui.input type="datetime-local" wire:model="startAt" />
+                            <x-ui.input type="datetime-local" wire:model.blur="startAt" />
                             @error('startAt')
                                 <p class="mt-1.5 text-xs text-red-600 dark:text-red-400">{{ $message }}</p>
                             @enderror
@@ -59,7 +59,7 @@
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                                 Selesai <span class="text-red-500">*</span>
                             </label>
-                            <x-ui.input type="datetime-local" wire:model="endAt" />
+                            <x-ui.input type="datetime-local" wire:model.blur="endAt" />
                             @error('endAt')
                                 <p class="mt-1.5 text-xs text-red-600 dark:text-red-400">{{ $message }}</p>
                             @enderror
@@ -70,7 +70,7 @@
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                             Status <span class="text-red-500">*</span>
                         </label>
-                        <x-ui.select wire:model="status">
+                        <x-ui.select wire:model.blur="status">
                             <option value="draft">Draf</option>
                             <option value="open">Aktif</option>
                             <option value="closed">Selesai</option>

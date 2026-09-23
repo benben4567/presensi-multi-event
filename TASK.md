@@ -11,7 +11,7 @@ Sumber: audit menyeluruh 2026-09-23 (kesesuaian plan, security, UX/fungsi).
 
 - [x] IDOR di `RecordAttendanceAction::executeManual()` — fixed 2026-09-23
 - [x] `AdminEnrollmentList` (disable/enable/blacklist/edit) tidak cek `event_id` cocok — fixed 2026-09-23 (helper `enrollmentInThisEvent()`, 404 kalau id bukan milik event ini)
-- [ ] Halaman `/profile` (Breeze default) masih bahasa Inggris — pelanggaran aturan "semua UI Bahasa Indonesia"
+- [x] Halaman `/profile` + semua halaman auth Breeze masih bahasa Inggris — fixed 2026-09-23. Root cause lebih luas dari dugaan: `APP_LOCALE` default `en` + gak ada file `lang/id/*`, jadi SEMUA pesan validasi default Laravel (bukan cuma /profile) tampil bahasa Inggris di form manapun yang gak kasih custom message. Fix: `APP_LOCALE=id` + `lang/id/{validation,auth,passwords}.php` (root-cause, nutup celah di semua form sekaligus) + translate teks blade di `resources/views/{auth,profile,layouts/navigation}.blade.php`.
 
 ## UX — Operator (tablet/scanner), prioritas tinggi
 
@@ -28,3 +28,4 @@ Sumber: audit menyeluruh 2026-09-23 (kesesuaian plan, security, UX/fungsi).
 
 - [ ] Konsistensi timing validasi inline antar form admin
 - [ ] Filter tanggal di halaman monitoring/activity log
+- [ ] Ditemukan pas translate: `/register` publik masih aktif & reachable (siapa aja bisa bikin akun baru tanpa role — gak exploitable karena user tanpa role langsung mental balik ke login, tapi tetep nyampah data/rawan spam). Juga `/profile` masih pake layout Breeze default (`x-app-layout`), beda total dari `layouts.admin`/`layouts.ops` — gak ada link masuk dari nav manapun (halaman "mati", cuma bisa diakses ketik URL langsung). Pertimbangkan: matikan route register, atau restyle /profile pake layout app yang sebenernya.

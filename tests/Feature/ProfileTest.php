@@ -96,4 +96,19 @@ class ProfileTest extends TestCase
 
         $this->assertNotNull($user->fresh());
     }
+
+    public function test_validation_errors_are_shown_in_indonesian(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this
+            ->actingAs($user)
+            ->from('/profile')
+            ->patch('/profile', ['name' => '', 'email' => '']);
+
+        $response->assertSessionHasErrors('name');
+        $errors = session('errors')->getBag('default');
+
+        $this->assertSame('Nama wajib diisi.', $errors->first('name'));
+    }
 }

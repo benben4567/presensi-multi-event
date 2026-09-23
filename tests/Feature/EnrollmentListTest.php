@@ -248,6 +248,32 @@ class EnrollmentListTest extends TestCase
         $this->assertSame($originalTokenHash, $enrollment->invitation->fresh()->token_hash);
     }
 
+    #[Test]
+    public function admin_cannot_disable_enrollment_from_another_event(): void
+    {
+        $otherEvent = Event::factory()->create();
+        $otherEnrollment = EventParticipant::factory()->for($otherEvent)->create();
+
+        $this->expectException(\Illuminate\Database\Eloquent\ModelNotFoundException::class);
+
+        Livewire::actingAs($this->admin)
+            ->test(AdminEnrollmentList::class, ['event' => $this->event])
+            ->dispatch('disable-enrollment', enrollmentId: $otherEnrollment->id);
+    }
+
+    #[Test]
+    public function admin_cannot_edit_participant_from_another_event(): void
+    {
+        $otherEvent = Event::factory()->create();
+        $otherEnrollment = EventParticipant::factory()->for($otherEvent)->create();
+
+        $this->expectException(\Illuminate\Database\Eloquent\ModelNotFoundException::class);
+
+        Livewire::actingAs($this->admin)
+            ->test(AdminEnrollmentList::class, ['event' => $this->event])
+            ->call('openEditForm', $otherEnrollment->id);
+    }
+
     // ── Helper ─────────────────────────────────────────────────────────────
 
     private function importCsv(string $content): void

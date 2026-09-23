@@ -10,7 +10,7 @@ Sumber: audit menyeluruh 2026-09-23 (kesesuaian plan, security, UX/fungsi).
 ## Bug/Security (siap dikerjakan, tinggal approve prioritas)
 
 - [x] IDOR di `RecordAttendanceAction::executeManual()` — fixed 2026-09-23
-- [ ] `AdminEnrollmentList` (disable/enable/blacklist/edit) tidak cek `event_id` cocok — low risk saat ini (admin akses blanket), tapi jadi jebakan kalau ada per-event admin scoping nanti
+- [x] `AdminEnrollmentList` (disable/enable/blacklist/edit) tidak cek `event_id` cocok — fixed 2026-09-23 (helper `enrollmentInThisEvent()`, 404 kalau id bukan milik event ini)
 - [ ] Halaman `/profile` (Breeze default) masih bahasa Inggris — pelanggaran aturan "semua UI Bahasa Indonesia"
 
 ## UX — Operator (tablet/scanner), prioritas tinggi

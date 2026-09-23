@@ -81,7 +81,7 @@ class AdminEnrollmentList extends Component
     #[On('disable-enrollment')]
     public function disable(int $enrollmentId): void
     {
-        $enrollment = EventParticipant::findOrFail($enrollmentId);
+        $enrollment = $this->enrollmentInThisEvent($enrollmentId);
         (new SetEnrollmentAccessAction)->execute($enrollment, AccessStatus::Disabled, null, Auth::id());
         $this->dispatch('toast', message: 'Peserta berhasil dinonaktifkan.', type: 'warning');
     }
@@ -102,7 +102,7 @@ class AdminEnrollmentList extends Component
     #[On('enable-enrollment')]
     public function enable(int $enrollmentId): void
     {
-        $enrollment = EventParticipant::findOrFail($enrollmentId);
+        $enrollment = $this->enrollmentInThisEvent($enrollmentId);
         (new SetEnrollmentAccessAction)->execute($enrollment, AccessStatus::Allowed, null, Auth::id());
         $this->dispatch('toast', message: 'Peserta berhasil diaktifkan kembali.', type: 'success');
     }
@@ -129,7 +129,7 @@ class AdminEnrollmentList extends Component
             'blacklistReason' => ['required', 'string', 'max:100'],
         ]);
 
-        $enrollment = EventParticipant::findOrFail($this->pendingEnrollmentId);
+        $enrollment = $this->enrollmentInThisEvent((int) $this->pendingEnrollmentId);
         (new SetEnrollmentAccessAction)->execute(
             $enrollment,
             AccessStatus::Blacklisted,
@@ -228,7 +228,7 @@ class AdminEnrollmentList extends Component
 
     public function openEditForm(int $enrollmentId): void
     {
-        $enrollment = EventParticipant::with('participant')->findOrFail($enrollmentId);
+        $enrollment = $this->enrollmentInThisEvent($enrollmentId, with: 'participant');
 
         $this->editingEnrollmentId = $enrollmentId;
         $this->editName = $enrollment->participant->name;
@@ -258,7 +258,7 @@ class AdminEnrollmentList extends Component
             return;
         }
 
-        $enrollment = EventParticipant::with('participant')->findOrFail($this->editingEnrollmentId);
+        $enrollment = $this->enrollmentInThisEvent((int) $this->editingEnrollmentId, with: 'participant');
         $participant = $enrollment->participant;
 
         $collision = Participant::where('phone_e164', $phoneE164)
@@ -278,6 +278,19 @@ class AdminEnrollmentList extends Component
 
         $this->cancelEditForm();
         $this->dispatch('toast', message: 'Data peserta berhasil diperbarui.', type: 'success');
+    }
+
+    /**
+     * Fetch an EventParticipant, scoped to this component's event — prevents
+     * an id belonging to another event from being mutated via a crafted
+     * Livewire request.
+     */
+    private function enrollmentInThisEvent(int $enrollmentId, ?string $with = null): EventParticipant
+    {
+        return EventParticipant::query()
+            ->when($with, fn ($q) => $q->with($with))
+            ->where('event_id', $this->eventId)
+            ->findOrFail($enrollmentId);
     }
 
     public function render(): \Illuminate\View\View

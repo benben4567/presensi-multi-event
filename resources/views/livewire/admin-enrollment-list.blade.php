@@ -140,6 +140,14 @@
                     <td class="px-4 py-3">
                         <div class="flex items-center justify-end gap-1.5">
 
+                            {{-- Edit data peserta --}}
+                            <x-ui.button
+                                wire:click="openEditForm({{ $enrollment->id }})"
+                                size="sm"
+                            >
+                                Edit
+                            </x-ui.button>
+
                             {{-- Cetak kartu undangan individu --}}
                             @if($enrollment->invitation?->token && !$enrollment->invitation->isRevoked())
                                 <x-ui.button
@@ -343,6 +351,70 @@
             <div class="flex items-center justify-end gap-3">
                 <x-ui.button wire:click="cancelAddForm">Batal</x-ui.button>
                 <x-ui.button wire:click="confirmAdd" variant="primary">Simpan</x-ui.button>
+            </div>
+        </div>
+    </div>
+
+    {{-- ── Edit peserta modal ──────────────────────────────────────────── --}}
+    <div
+        x-data="{ show: $wire.entangle('showEditForm') }"
+        x-show="show"
+        x-transition:enter="transition ease-out duration-200"
+        x-transition:enter-start="opacity-0"
+        x-transition:enter-end="opacity-100"
+        x-transition:leave="transition ease-in duration-150"
+        x-transition:leave-start="opacity-100"
+        x-transition:leave-end="opacity-0"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+        @keydown.escape.window="$wire.cancelEditForm()"
+        style="display: none"
+    >
+        <div
+            x-show="show"
+            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="opacity-0 scale-95"
+            x-transition:enter-end="opacity-100 scale-100"
+            x-transition:leave="transition ease-in duration-150"
+            x-transition:leave-start="opacity-100 scale-100"
+            x-transition:leave-end="opacity-0 scale-95"
+            class="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 w-full max-w-md"
+            @click.stop
+        >
+            <div class="flex items-start gap-4 mb-4">
+                <div class="flex-shrink-0 w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center">
+                    <x-tabler-edit class="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div>
+                    <h3 class="text-base font-semibold text-gray-800 dark:text-white">Edit Data Peserta</h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                        Perubahan berlaku untuk peserta ini di semua event yang diikutinya.
+                    </p>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Nama <span class="text-red-500">*</span>
+                </label>
+                <x-ui.input wire:model="editName" placeholder="Nama peserta" maxlength="150" />
+                @error('editName')
+                    <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    No HP <span class="text-red-500">*</span>
+                </label>
+                <x-ui.input wire:model="editPhone" placeholder="08xxxxxxxxxx" />
+                @error('editPhone')
+                    <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <div class="flex items-center justify-end gap-3">
+                <x-ui.button wire:click="cancelEditForm">Batal</x-ui.button>
+                <x-ui.button wire:click="confirmEdit" variant="primary">Simpan</x-ui.button>
             </div>
         </div>
     </div>

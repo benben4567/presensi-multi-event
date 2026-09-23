@@ -45,6 +45,16 @@ class AdminEnrollmentList extends Component
     /** @var array<int, array{key: string, value: string}> */
     public array $newMeta = [];
 
+    // ── Edit participant modal state ────────────────────────────────────────
+
+    public bool $showEditForm = false;
+
+    public ?int $editingEnrollmentId = null;
+
+    public string $editName = '';
+
+    public string $editPhone = '';
+
     public function mount(Event $event): void
     {
         $this->eventId = $event->id;
@@ -212,6 +222,62 @@ class AdminEnrollmentList extends Component
 
         $this->cancelAddForm();
         $this->dispatch('toast', message: 'Peserta berhasil ditambahkan.', type: 'success');
+    }
+
+    // ── Edit participant ─────────────────────────────────────────────────
+
+    public function openEditForm(int $enrollmentId): void
+    {
+        $enrollment = EventParticipant::with('participant')->findOrFail($enrollmentId);
+
+        $this->editingEnrollmentId = $enrollmentId;
+        $this->editName = $enrollment->participant->name;
+        $this->editPhone = $enrollment->participant->phone_e164 ?? '';
+        $this->resetErrorBag();
+        $this->showEditForm = true;
+    }
+
+    public function cancelEditForm(): void
+    {
+        $this->showEditForm = false;
+        $this->reset(['editingEnrollmentId', 'editName', 'editPhone']);
+    }
+
+    public function confirmEdit(): void
+    {
+        $this->validate([
+            'editName' => ['required', 'string', 'max:150'],
+            'editPhone' => ['required', 'string'],
+        ], [], ['editName' => 'Nama', 'editPhone' => 'No HP']);
+
+        $phoneE164 = PhoneNumberNormalizer::toE164($this->editPhone);
+
+        if ($phoneE164 === null) {
+            $this->addError('editPhone', 'Nomor HP tidak valid.');
+
+            return;
+        }
+
+        $enrollment = EventParticipant::with('participant')->findOrFail($this->editingEnrollmentId);
+        $participant = $enrollment->participant;
+
+        $collision = Participant::where('phone_e164', $phoneE164)
+            ->where('id', '!=', $participant->id)
+            ->first();
+
+        if ($collision) {
+            $this->addError('editPhone', "Nomor ini sudah dipakai peserta lain ({$collision->name}).");
+
+            return;
+        }
+
+        $participant->update([
+            'name' => $this->editName,
+            'phone_e164' => $phoneE164,
+        ]);
+
+        $this->cancelEditForm();
+        $this->dispatch('toast', message: 'Data peserta berhasil diperbarui.', type: 'success');
     }
 
     public function render(): \Illuminate\View\View

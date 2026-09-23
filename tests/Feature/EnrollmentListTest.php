@@ -190,6 +190,64 @@ class EnrollmentListTest extends TestCase
         $this->assertTrue(EventParticipant::where('id', $enrollmentOther->id)->exists());
     }
 
+    #[Test]
+    public function admin_can_edit_participant_name_and_phone(): void
+    {
+        $this->importCsv("nama,no_hp\nBudi Santoso,08123456789\n");
+        $participant = Participant::where('phone_e164', '+628123456789')->first();
+        $enrollment = EventParticipant::where('participant_id', $participant->id)->first();
+
+        Livewire::actingAs($this->admin)
+            ->test(AdminEnrollmentList::class, ['event' => $this->event])
+            ->call('openEditForm', $enrollment->id)
+            ->assertSet('editName', 'Budi Santoso')
+            ->assertSet('editPhone', '+628123456789')
+            ->set('editName', 'Budi Santoso Updated')
+            ->set('editPhone', '081298765432')
+            ->call('confirmEdit')
+            ->assertHasNoErrors()
+            ->assertSet('showEditForm', false);
+
+        $participant->refresh();
+        $this->assertSame('Budi Santoso Updated', $participant->name);
+        $this->assertSame('+6281298765432', $participant->phone_e164);
+    }
+
+    #[Test]
+    public function editing_participant_phone_rejects_collision_with_another_participant(): void
+    {
+        $this->importCsv("nama,no_hp\nBudi Santoso,08123456789\nAni Rahayu,08987654321\n");
+        $budi = Participant::where('phone_e164', '+628123456789')->first();
+        $enrollment = EventParticipant::where('participant_id', $budi->id)->first();
+
+        Livewire::actingAs($this->admin)
+            ->test(AdminEnrollmentList::class, ['event' => $this->event])
+            ->call('openEditForm', $enrollment->id)
+            ->set('editPhone', '08987654321')
+            ->call('confirmEdit')
+            ->assertHasErrors(['editPhone']);
+
+        $this->assertSame('+628123456789', $budi->fresh()->phone_e164);
+    }
+
+    #[Test]
+    public function editing_participant_does_not_affect_qr_invitation(): void
+    {
+        $this->importCsv("nama,no_hp\nBudi Santoso,08123456789\n");
+        $participant = Participant::where('phone_e164', '+628123456789')->first();
+        $enrollment = EventParticipant::where('participant_id', $participant->id)->first();
+        $originalTokenHash = $enrollment->invitation->token_hash;
+
+        Livewire::actingAs($this->admin)
+            ->test(AdminEnrollmentList::class, ['event' => $this->event])
+            ->call('openEditForm', $enrollment->id)
+            ->set('editPhone', '081298765432')
+            ->call('confirmEdit')
+            ->assertHasNoErrors();
+
+        $this->assertSame($originalTokenHash, $enrollment->invitation->fresh()->token_hash);
+    }
+
     // ── Helper ─────────────────────────────────────────────────────────────
 
     private function importCsv(string $content): void

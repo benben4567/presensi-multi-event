@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use App\Models\AttendanceLog;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
@@ -44,6 +45,13 @@ class AdminUserIndex extends Component
         }
 
         $user = User::findOrFail($userId);
+
+        if (AttendanceLog::where('operator_user_id', $userId)->exists()) {
+            $this->dispatch('toast', message: 'Tidak dapat menghapus, pengguna memiliki riwayat presensi.', type: 'error');
+
+            return;
+        }
+
         $user->delete();
 
         $this->dispatch('toast', message: 'Pengguna berhasil dihapus.', type: 'success');

@@ -66,7 +66,7 @@
                                 Edit
                             </x-ui.button>
                             <x-ui.button
-                                wire:click="confirmDelete({{ $event->id }})"
+                                wire:click="confirmDelete('{{ $event->id }}')"
                                 variant="danger"
                                 size="sm"
                             >

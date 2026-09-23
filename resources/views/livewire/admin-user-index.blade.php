@@ -55,7 +55,7 @@
                             </x-ui.button>
                             @if($user->id !== auth()->id())
                                 <x-ui.button
-                                    wire:click="confirmDelete({{ $user->id }})"
+                                    wire:click="confirmDelete('{{ $user->id }}')"
                                     variant="danger"
                                     size="sm"
                                 >

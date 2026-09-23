@@ -4,6 +4,12 @@ namespace Tests\Feature;
 
 use App\Livewire\AdminUserForm;
 use App\Livewire\AdminUserIndex;
+use App\Models\AttendanceLog;
+use App\Models\Device;
+use App\Models\Event;
+use App\Models\EventParticipant;
+use App\Models\EventSession;
+use App\Models\Participant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -198,5 +204,48 @@ class AdminUserTest extends TestCase
             ->assertDispatched('toast');
 
         $this->assertModelExists($this->admin);
+    }
+
+    #[Test]
+    public function delete_button_has_quoted_uuid_in_wire_click(): void
+    {
+        $user = User::factory()->create();
+        $user->assignRole('operator');
+
+        // UUIDs contain hyphens; an unquoted wire:click="confirmDelete({{ $user->id }})"
+        // is invalid JS (subtraction of undefined identifiers) and never reaches the server.
+        Livewire::actingAs($this->admin)
+            ->test(AdminUserIndex::class)
+            ->assertSeeHtml("confirmDelete('{$user->id}')");
+    }
+
+    #[Test]
+    public function admin_cannot_delete_user_with_attendance_history(): void
+    {
+        $operator = User::factory()->create();
+        $operator->assignRole('operator');
+
+        $event = Event::factory()->create();
+        $session = EventSession::factory()->for($event)->create();
+        $participant = Participant::factory()->create();
+        $enrollment = EventParticipant::factory()->for($event)->for($participant)->create();
+        $device = Device::factory()->create();
+
+        AttendanceLog::create([
+            'event_id' => $event->id,
+            'event_participant_id' => $enrollment->id,
+            'session_id' => $session->id,
+            'action' => 'check_in',
+            'scanned_at' => now(),
+            'device_id' => $device->id,
+            'operator_user_id' => $operator->id,
+        ]);
+
+        Livewire::actingAs($this->admin)
+            ->test(AdminUserIndex::class)
+            ->dispatch('delete-user', userId: $operator->id)
+            ->assertDispatched('toast');
+
+        $this->assertModelExists($operator);
     }
 }

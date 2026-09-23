@@ -2,14 +2,10 @@
 
 namespace App\Actions;
 
-use App\Enums\AccessStatus;
 use App\Models\Event;
 use App\Models\EventParticipant;
-use App\Models\Invitation;
 use App\Models\Participant;
-use libphonenumber\NumberParseException;
-use libphonenumber\PhoneNumberFormat;
-use libphonenumber\PhoneNumberUtil;
+use App\Support\PhoneNumberNormalizer;
 use Rap2hpoutre\FastExcel\FastExcel;
 
 class ImportPesertaAction
@@ -45,7 +41,7 @@ class ImportPesertaAction
                 continue;
             }
 
-            $phoneE164 = $this->normalizePhone($noHp);
+            $phoneE164 = PhoneNumberNormalizer::toE164($noHp);
 
             if ($phoneE164 === null) {
                 $errors++;
@@ -99,22 +95,7 @@ class ImportPesertaAction
                 ]);
             }
 
-            $enrollment = EventParticipant::create([
-                'event_id' => $event->id,
-                'participant_id' => $participant->id,
-                'access_status' => AccessStatus::Allowed->value,
-            ]);
-
-            $rawToken = bin2hex(random_bytes(32));
-
-            Invitation::create([
-                'event_participant_id' => $enrollment->id,
-                'token_hash' => hash('sha256', $rawToken),
-                'token' => $rawToken,
-                'invitation_code' => Invitation::nextCodeForEvent($event),
-                'issued_at' => now(),
-                'expires_at' => $event->end_at,
-            ]);
+            (new EnrollParticipantAction)->execute($event, $participant);
 
             $imported++;
         }
@@ -126,25 +107,5 @@ class ImportPesertaAction
             'error_rows' => $errorRows,
             'skipped_rows' => $skippedRows,
         ];
-    }
-
-    private function normalizePhone(string $raw): ?string
-    {
-        if ($raw === '') {
-            return null;
-        }
-
-        try {
-            $util = PhoneNumberUtil::getInstance();
-            $number = $util->parse($raw, 'ID');
-
-            if (! $util->isValidNumber($number)) {
-                return null;
-            }
-
-            return $util->format($number, PhoneNumberFormat::E164);
-        } catch (NumberParseException) {
-            return null;
-        }
     }
 }

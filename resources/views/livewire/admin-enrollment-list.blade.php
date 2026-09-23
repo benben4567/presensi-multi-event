@@ -66,6 +66,10 @@
                 <x-tabler-file-import class="w-4 h-4" />
                 Impor Peserta
             </x-ui.button>
+            <x-ui.button wire:click="openAddForm" variant="primary">
+                <x-tabler-user-plus class="w-4 h-4" />
+                Tambah Peserta
+            </x-ui.button>
         </x-slot:actions>
     </x-ui.header>
 
@@ -243,6 +247,102 @@
             <div class="flex items-center justify-end gap-3">
                 <x-ui.button wire:click="cancelBlacklist">Batal</x-ui.button>
                 <x-ui.button wire:click="confirmBlacklist" variant="danger">Blacklist</x-ui.button>
+            </div>
+        </div>
+    </div>
+
+    {{-- ── Tambah peserta modal ────────────────────────────────────────── --}}
+    <div
+        x-data="{ show: $wire.entangle('showAddForm') }"
+        x-show="show"
+        x-transition:enter="transition ease-out duration-200"
+        x-transition:enter-start="opacity-0"
+        x-transition:enter-end="opacity-100"
+        x-transition:leave="transition ease-in duration-150"
+        x-transition:leave-start="opacity-100"
+        x-transition:leave-end="opacity-0"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+        @keydown.escape.window="$wire.cancelAddForm()"
+        style="display: none"
+    >
+        <div
+            x-show="show"
+            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="opacity-0 scale-95"
+            x-transition:enter-end="opacity-100 scale-100"
+            x-transition:leave="transition ease-in duration-150"
+            x-transition:leave-start="opacity-100 scale-100"
+            x-transition:leave-end="opacity-0 scale-95"
+            class="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 w-full max-w-md"
+            @click.stop
+        >
+            <div class="flex items-start gap-4 mb-4">
+                <div class="flex-shrink-0 w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center">
+                    <x-tabler-user-plus class="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div>
+                    <h3 class="text-base font-semibold text-gray-800 dark:text-white">Tambah Peserta</h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                        Peserta akan langsung terdaftar dan mendapatkan QR undangan.
+                    </p>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Nama <span class="text-red-500">*</span>
+                </label>
+                <x-ui.input wire:model="newName" placeholder="Nama peserta" maxlength="150" />
+                @error('newName')
+                    <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    No HP <span class="text-red-500">*</span>
+                </label>
+                <x-ui.input wire:model="newPhone" placeholder="08xxxxxxxxxx" />
+                @error('newPhone')
+                    <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <div class="mb-4">
+                <div class="flex items-center justify-between mb-1">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Atribut Tambahan
+                    </label>
+                    <button
+                        type="button"
+                        wire:click="addMetaField"
+                        class="text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
+                    >
+                        + Tambah Atribut
+                    </button>
+                </div>
+                <p class="text-xs text-gray-400 dark:text-gray-500 mb-2">
+                    Opsional. Contoh: instansi, jabatan, dll.
+                </p>
+
+                @foreach($newMeta as $i => $row)
+                    <div class="flex items-center gap-2 mb-2" wire:key="meta-row-{{ $i }}">
+                        <x-ui.input wire:model="newMeta.{{ $i }}.key" placeholder="Nama atribut" class="flex-1" />
+                        <x-ui.input wire:model="newMeta.{{ $i }}.value" placeholder="Nilai" class="flex-1" />
+                        <button
+                            type="button"
+                            wire:click="removeMetaField({{ $i }})"
+                            class="shrink-0 p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400"
+                        >
+                            <x-tabler-x class="w-4 h-4" />
+                        </button>
+                    </div>
+                @endforeach
+            </div>
+
+            <div class="flex items-center justify-end gap-3">
+                <x-ui.button wire:click="cancelAddForm">Batal</x-ui.button>
+                <x-ui.button wire:click="confirmAdd" variant="primary">Simpan</x-ui.button>
             </div>
         </div>
     </div>

@@ -5,6 +5,9 @@ namespace Tests\Feature;
 use App\Actions\ImportPesertaAction;
 use App\Livewire\AdminEnrollmentList;
 use App\Models\Event;
+use App\Models\EventParticipant;
+use App\Models\Invitation;
+use App\Models\Participant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -82,6 +85,109 @@ class EnrollmentListTest extends TestCase
         $this->actingAs($this->admin)
             ->get(route('admin.events.participants.import', $this->event))
             ->assertOk();
+    }
+
+    #[Test]
+    public function admin_can_add_a_single_participant(): void
+    {
+        Livewire::actingAs($this->admin)
+            ->test(AdminEnrollmentList::class, ['event' => $this->event])
+            ->set('newName', 'Citra Dewi')
+            ->set('newPhone', '08123456789')
+            ->call('confirmAdd')
+            ->assertHasNoErrors()
+            ->assertSet('showAddForm', false);
+
+        $participant = Participant::where('phone_e164', '+628123456789')->first();
+
+        $this->assertNotNull($participant);
+        $this->assertSame('Citra Dewi', $participant->name);
+
+        $enrollment = EventParticipant::where('event_id', $this->event->id)
+            ->where('participant_id', $participant->id)
+            ->first();
+
+        $this->assertNotNull($enrollment);
+        $this->assertTrue(Invitation::where('event_participant_id', $enrollment->id)->exists());
+    }
+
+    #[Test]
+    public function admin_can_add_participant_with_custom_attributes(): void
+    {
+        Livewire::actingAs($this->admin)
+            ->test(AdminEnrollmentList::class, ['event' => $this->event])
+            ->set('newName', 'Citra Dewi')
+            ->set('newPhone', '08123456789')
+            ->set('newMeta', [
+                ['key' => 'Instansi', 'value' => 'ITSK'],
+                ['key' => '', 'value' => 'diabaikan karena key kosong'],
+            ])
+            ->call('confirmAdd')
+            ->assertHasNoErrors();
+
+        $participant = Participant::where('phone_e164', '+628123456789')->first();
+
+        $this->assertSame(['instansi' => 'ITSK'], $participant->meta);
+    }
+
+    #[Test]
+    public function adding_participant_requires_name_and_phone(): void
+    {
+        Livewire::actingAs($this->admin)
+            ->test(AdminEnrollmentList::class, ['event' => $this->event])
+            ->set('newName', '')
+            ->set('newPhone', '')
+            ->call('confirmAdd')
+            ->assertHasErrors(['newName', 'newPhone']);
+    }
+
+    #[Test]
+    public function adding_participant_rejects_invalid_phone(): void
+    {
+        Livewire::actingAs($this->admin)
+            ->test(AdminEnrollmentList::class, ['event' => $this->event])
+            ->set('newName', 'Citra Dewi')
+            ->set('newPhone', 'bukan-nomor')
+            ->call('confirmAdd')
+            ->assertHasErrors(['newPhone']);
+    }
+
+    #[Test]
+    public function adding_participant_already_enrolled_shows_error(): void
+    {
+        $this->importCsv("nama,no_hp\nBudi Santoso,08123456789\n");
+
+        Livewire::actingAs($this->admin)
+            ->test(AdminEnrollmentList::class, ['event' => $this->event])
+            ->set('newName', 'Budi Santoso')
+            ->set('newPhone', '08123456789')
+            ->call('confirmAdd')
+            ->assertHasErrors(['newPhone']);
+
+        $this->assertSame(1, EventParticipant::where('event_id', $this->event->id)->count());
+    }
+
+    #[Test]
+    public function adding_participant_reuses_existing_participant_in_other_event(): void
+    {
+        $otherEvent = Event::factory()->create();
+        $participant = Participant::factory()->create(['name' => 'Budi Santoso', 'phone_e164' => '+628123456789']);
+        $enrollmentOther = EventParticipant::create([
+            'event_id' => $otherEvent->id,
+            'participant_id' => $participant->id,
+            'access_status' => 'allowed',
+        ]);
+
+        Livewire::actingAs($this->admin)
+            ->test(AdminEnrollmentList::class, ['event' => $this->event])
+            ->set('newName', 'Budi Santoso')
+            ->set('newPhone', '08123456789')
+            ->call('confirmAdd')
+            ->assertHasNoErrors();
+
+        $this->assertSame(1, Participant::where('phone_e164', '+628123456789')->count());
+        $this->assertTrue(EventParticipant::where('event_id', $this->event->id)->where('participant_id', $participant->id)->exists());
+        $this->assertTrue(EventParticipant::where('id', $enrollmentOther->id)->exists());
     }
 
     // ── Helper ─────────────────────────────────────────────────────────────

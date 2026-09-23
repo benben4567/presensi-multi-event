@@ -15,8 +15,8 @@ Sumber: audit menyeluruh 2026-09-23 (kesesuaian plan, security, UX/fungsi).
 
 ## UX — Operator (tablet/scanner), prioritas tinggi
 
-- [ ] `OpsEventScan`: tambah guard biar gak double-submit kalau scanner HID auto-repeat / dobel scan cepat
-- [ ] `OpsEventScan`: tambah feedback suara (beep sukses/gagal) + indikator visual "scanner siap/fokus"
+- [x] `OpsEventScan`: guard double-submit (input disabled selama processing) — fixed 2026-09-23
+- [x] `OpsEventScan`: feedback suara (beep, Web Audio API, beda nada accepted/warning/rejected) + indikator visual "Siap menerima scan" / "Memproses..." / "Nonaktif" — fixed 2026-09-23
 
 ## UX — Admin, prioritas menengah
 

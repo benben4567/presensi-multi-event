@@ -70,6 +70,8 @@ class OpsEventScan extends Component
             ?? $result->enrollment?->participant;
 
         $this->applyResult($result, $participant?->name, $participant?->phone_e164, $participant?->meta ?? []);
+
+        $this->dispatch('scan-completed', outcome: $result->outcome);
     }
 
     public function clearResult(): void

@@ -115,7 +115,8 @@ class OpsEventScanTest extends TestCase
         Livewire::actingAs($this->operator)
             ->test(OpsEventScan::class, ['event' => $this->event])
             ->call('processQrValue', 'itsk:att:v1:'.$this->rawToken)
-            ->assertSet('resultOutcome', 'accepted');
+            ->assertSet('resultOutcome', 'accepted')
+            ->assertDispatched('scan-completed', outcome: 'accepted');
     }
 
     #[Test]

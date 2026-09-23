@@ -1,16 +1,6 @@
 <div
-    x-data="{
-        qrValue: '',
-        initDevice() {
-            let uuid = localStorage.getItem('device_uuid');
-            if (!uuid) {
-                uuid = crypto.randomUUID();
-                localStorage.setItem('device_uuid', uuid);
-            }
-            $wire.set('deviceUuid', uuid);
-        }
-    }"
-    x-init="initDevice()"
+    x-data="qrScanner()"
+    x-init="init()"
 >
     {{-- Session selector (only shown when event has multiple sessions) --}}
     @if($event->sessions->count() > 1)
@@ -97,6 +87,28 @@
             class="relative mb-5 rounded-xl border-2 border-dashed border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/20 p-10 text-center cursor-text select-none"
             @click="$refs.qrInput.focus()"
         >
+            {{-- Scanner status indicator --}}
+            <div class="absolute top-3 right-3 flex items-center gap-1.5 text-xs font-medium">
+                <template x-if="processing">
+                    <span class="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
+                        <span class="w-2 h-2 rounded-full bg-gray-400 animate-pulse"></span>
+                        Memproses...
+                    </span>
+                </template>
+                <template x-if="!processing && focused">
+                    <span class="flex items-center gap-1.5 text-green-600 dark:text-green-400">
+                        <span class="w-2 h-2 rounded-full bg-green-500"></span>
+                        Siap menerima scan
+                    </span>
+                </template>
+                <template x-if="!processing && !focused">
+                    <span class="flex items-center gap-1.5 text-red-500 dark:text-red-400">
+                        <span class="w-2 h-2 rounded-full bg-red-500"></span>
+                        Nonaktif — klik area ini
+                    </span>
+                </template>
+            </div>
+
             <x-tabler-scan class="w-16 h-16 text-blue-400 dark:text-blue-500 mx-auto mb-3" />
             <p class="text-base font-medium text-gray-700 dark:text-gray-200">Arahkan QR ke scanner</p>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Klik area ini lalu scan QR peserta</p>
@@ -106,12 +118,10 @@
                 x-ref="qrInput"
                 x-model="qrValue"
                 x-init="$el.focus()"
-                @keydown.enter.prevent="
-                    let val = qrValue.trim();
-                    qrValue = '';
-                    if (val) $wire.processQrValue(val);
-                "
-                @blur="setTimeout(() => $el.focus(), 100)"
+                :disabled="processing"
+                @keydown.enter.prevent="submit()"
+                @focus="focused = true"
+                @blur="focused = false; setTimeout(() => $el.focus(), 100)"
                 inputmode="none"
                 autocomplete="off"
                 class="absolute inset-0 w-full h-full opacity-0 cursor-default"
@@ -147,3 +157,66 @@
         @endif
     @endif
 </div>
+
+@script
+<script>
+Alpine.data('qrScanner', () => ({
+    qrValue: '',
+    processing: false,
+    focused: false,
+    _audioCtx: null,
+
+    init() {
+        let uuid = localStorage.getItem('device_uuid');
+        if (!uuid) {
+            uuid = crypto.randomUUID();
+            localStorage.setItem('device_uuid', uuid);
+        }
+        this.$wire.set('deviceUuid', uuid);
+
+        this.$wire.on('scan-completed', ({ outcome }) => this.beep(outcome));
+    },
+
+    submit() {
+        if (this.processing) return;
+
+        const val = this.qrValue.trim();
+        this.qrValue = '';
+        if (!val) return;
+
+        this.processing = true;
+
+        this.$wire.processQrValue(val).then(() => {
+            this.processing = false;
+            this.$nextTick(() => this.$refs.qrInput.focus());
+        });
+    },
+
+    // Short beep via Web Audio API — no audio asset files needed.
+    beep(outcome) {
+        this._audioCtx ??= new (window.AudioContext || window.webkitAudioContext)();
+
+        const tones = {
+            accepted: [{ freq: 880, duration: 0.12 }],
+            warning: [{ freq: 500, duration: 0.18 }],
+        }[outcome] ?? [
+            { freq: 220, duration: 0.12 },
+            { freq: 220, duration: 0.12, delay: 0.16 },
+        ];
+
+        tones.forEach(({ freq, duration, delay = 0 }) => {
+            const ctx = this._audioCtx;
+            const oscillator = ctx.createOscillator();
+            const gain = ctx.createGain();
+            oscillator.frequency.value = freq;
+            oscillator.connect(gain);
+            gain.connect(ctx.destination);
+            gain.gain.setValueAtTime(0.2, ctx.currentTime + delay);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + duration);
+            oscillator.start(ctx.currentTime + delay);
+            oscillator.stop(ctx.currentTime + delay + duration);
+        });
+    },
+}));
+</script>
+@endscript

@@ -73,18 +73,50 @@
         </x-slot:actions>
     </x-ui.header>
 
-    {{-- Search --}}
-    <div class="mb-4 max-w-sm">
-        <x-ui.input
-            wire:model.live.debounce.300ms="search"
-            placeholder="Cari nama atau nomor HP..."
-        />
+    {{-- Search + filter --}}
+    <div class="mb-4 flex flex-wrap items-end gap-3">
+        <div class="max-w-sm flex-1 min-w-[200px]">
+            <x-ui.input
+                wire:model.live.debounce.300ms="search"
+                placeholder="Cari nama atau nomor HP..."
+            />
+        </div>
+        <div class="w-48">
+            <x-ui.select wire:model.live="statusFilter">
+                <option value="">Semua Status</option>
+                <option value="allowed">Aktif</option>
+                <option value="disabled">Nonaktif</option>
+                <option value="blacklisted">Diblacklist</option>
+            </x-ui.select>
+        </div>
     </div>
+
+    {{-- Bulk action bar --}}
+    @if(count($selected) > 0)
+        <div class="mb-4 flex items-center justify-between gap-3 rounded-lg border border-blue-200 bg-blue-50 px-4 py-2.5 dark:border-blue-800 dark:bg-blue-900/30">
+            <span class="text-sm text-blue-800 dark:text-blue-200">
+                {{ count($selected) }} peserta dipilih
+            </span>
+            <div class="flex items-center gap-2">
+                <x-ui.button wire:click="confirmBulkEnable" size="sm">Aktifkan Terpilih</x-ui.button>
+                <x-ui.button wire:click="confirmBulkDisable" size="sm">Nonaktifkan Terpilih</x-ui.button>
+                <x-ui.button wire:click="clearSelection" size="sm">Batal Pilih</x-ui.button>
+            </div>
+        </div>
+    @endif
 
     {{-- Table --}}
     <x-ui.table>
         <thead class="bg-gray-50 dark:bg-gray-700 text-xs uppercase text-gray-500 dark:text-gray-400">
             <tr>
+                <th class="px-4 py-3 w-10">
+                    <input
+                        type="checkbox"
+                        wire:model.live="selectAll"
+                        class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+                        title="Pilih semua peserta yang cocok dengan pencarian/filter saat ini"
+                    />
+                </th>
                 <th class="px-4 py-3">Nama</th>
                 <th class="px-4 py-3">Nomor HP</th>
                 <th class="px-4 py-3">Status Akses</th>
@@ -95,6 +127,14 @@
         <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
             @forelse($enrollments as $enrollment)
                 <tr class="bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                    <td class="px-4 py-3">
+                        <input
+                            type="checkbox"
+                            wire:model.live="selected"
+                            value="{{ $enrollment->id }}"
+                            class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+                        />
+                    </td>
                     <td class="px-4 py-3">
                         <p class="font-medium text-gray-800 dark:text-white">{{ $enrollment->participant->name }}</p>
                         @if($enrollment->access_reason)
@@ -194,7 +234,7 @@
                     </td>
                 </tr>
             @empty
-                <x-ui.table-empty message="Belum ada peserta terdaftar." :colspan="5" />
+                <x-ui.table-empty message="Belum ada peserta terdaftar." :colspan="6" />
             @endforelse
         </tbody>
     </x-ui.table>

@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Actions\ImportPesertaAction;
+use App\Actions\SetEnrollmentAccessAction;
+use App\Enums\AccessStatus;
 use App\Livewire\AdminEnrollmentList;
 use App\Models\Event;
 use App\Models\EventParticipant;
@@ -272,6 +274,47 @@ class EnrollmentListTest extends TestCase
         Livewire::actingAs($this->admin)
             ->test(AdminEnrollmentList::class, ['event' => $this->event])
             ->call('openEditForm', $otherEnrollment->id);
+    }
+
+    #[Test]
+    public function enrollment_list_filters_by_access_status(): void
+    {
+        $this->importCsv("nama,no_hp\nBudi Santoso,08123456789\nAni Rahayu,08987654321\n");
+        $enrollment = EventParticipant::whereHas('participant', fn ($q) => $q->where('name', 'Ani Rahayu'))->first();
+        (new SetEnrollmentAccessAction)->execute($enrollment, AccessStatus::Disabled, null, $this->admin->id);
+
+        Livewire::actingAs($this->admin)
+            ->test(AdminEnrollmentList::class, ['event' => $this->event])
+            ->set('statusFilter', 'disabled')
+            ->assertSee('Ani Rahayu')
+            ->assertDontSee('Budi Santoso');
+    }
+
+    #[Test]
+    public function admin_can_bulk_disable_selected_participants(): void
+    {
+        $this->importCsv("nama,no_hp\nBudi Santoso,08123456789\nAni Rahayu,08987654321\n");
+        $ids = EventParticipant::pluck('id')->all();
+
+        Livewire::actingAs($this->admin)
+            ->test(AdminEnrollmentList::class, ['event' => $this->event])
+            ->set('selected', $ids)
+            ->dispatch('bulk-disable-enrollment', ids: $ids)
+            ->assertDispatched('toast');
+
+        $this->assertSame(2, EventParticipant::where('access_status', AccessStatus::Disabled->value)->count());
+    }
+
+    #[Test]
+    public function select_all_only_selects_visible_filtered_enrollments(): void
+    {
+        $this->importCsv("nama,no_hp\nBudi Santoso,08123456789\nAni Rahayu,08987654321\n");
+
+        Livewire::actingAs($this->admin)
+            ->test(AdminEnrollmentList::class, ['event' => $this->event])
+            ->set('search', 'Budi')
+            ->set('selectAll', true)
+            ->assertCount('selected', 1);
     }
 
     // ── Helper ─────────────────────────────────────────────────────────────

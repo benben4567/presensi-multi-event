@@ -26,6 +26,13 @@ class AdminEnrollmentList extends Component
 
     public string $search = '';
 
+    public string $statusFilter = '';
+
+    /** @var list<int> */
+    public array $selected = [];
+
+    public bool $selectAll = false;
+
     // ── Blacklist modal state ──────────────────────────────────────────────
 
     public bool $showBlacklistForm = false;
@@ -63,6 +70,91 @@ class AdminEnrollmentList extends Component
     public function updatedSearch(): void
     {
         $this->resetPage();
+        $this->clearSelection();
+    }
+
+    public function updatedStatusFilter(): void
+    {
+        $this->resetPage();
+        $this->clearSelection();
+    }
+
+    public function updatedSelectAll(bool $value): void
+    {
+        $this->selected = $value ? $this->visibleEnrollmentIds() : [];
+    }
+
+    public function clearSelection(): void
+    {
+        $this->selected = [];
+        $this->selectAll = false;
+    }
+
+    /** @return list<int> */
+    private function visibleEnrollmentIds(): array
+    {
+        return $this->buildEnrollmentsQuery()->pluck('id')->all();
+    }
+
+    // ── Bulk actions ─────────────────────────────────────────────────────
+
+    public function confirmBulkDisable(): void
+    {
+        if (empty($this->selected)) {
+            return;
+        }
+
+        $this->dispatch('show-confirm',
+            message: count($this->selected).' peserta terpilih akan dinonaktifkan. QR mereka akan dicabut sementara.',
+            confirmedEvent: 'bulk-disable-enrollment',
+            confirmedData: ['ids' => $this->selected],
+            confirmLabel: 'Nonaktifkan',
+            cancelLabel: 'Batal',
+        );
+    }
+
+    #[On('bulk-disable-enrollment')]
+    public function bulkDisable(array $ids): void
+    {
+        $this->bulkSetAccess($ids, AccessStatus::Disabled);
+        $this->dispatch('toast', message: 'Peserta terpilih berhasil dinonaktifkan.', type: 'warning');
+    }
+
+    public function confirmBulkEnable(): void
+    {
+        if (empty($this->selected)) {
+            return;
+        }
+
+        $this->dispatch('show-confirm',
+            message: count($this->selected).' peserta terpilih akan diaktifkan kembali.',
+            confirmedEvent: 'bulk-enable-enrollment',
+            confirmedData: ['ids' => $this->selected],
+            confirmLabel: 'Aktifkan Kembali',
+            cancelLabel: 'Batal',
+        );
+    }
+
+    #[On('bulk-enable-enrollment')]
+    public function bulkEnable(array $ids): void
+    {
+        $this->bulkSetAccess($ids, AccessStatus::Allowed);
+        $this->dispatch('toast', message: 'Peserta terpilih berhasil diaktifkan kembali.', type: 'success');
+    }
+
+    /** @param list<int> $ids */
+    private function bulkSetAccess(array $ids, AccessStatus $status): void
+    {
+        $enrollments = EventParticipant::query()
+            ->where('event_id', $this->eventId)
+            ->whereIn('id', $ids)
+            ->get();
+
+        foreach ($enrollments as $enrollment) {
+            (new SetEnrollmentAccessAction)->execute($enrollment, $status, null, Auth::id());
+        }
+
+        $this->clearSelection();
     }
 
     // ── Disable ───────────────────────────────────────────────────────────
@@ -293,12 +385,13 @@ class AdminEnrollmentList extends Component
             ->findOrFail($enrollmentId);
     }
 
-    public function render(): \Illuminate\View\View
+    /**
+     * @return \Illuminate\Database\Eloquent\Builder<EventParticipant>
+     */
+    private function buildEnrollmentsQuery(): \Illuminate\Database\Eloquent\Builder
     {
-        $event = Event::findOrFail($this->eventId);
-
-        $enrollments = $event->eventParticipants()
-            ->with(['participant', 'invitation'])
+        return EventParticipant::query()
+            ->where('event_id', $this->eventId)
             ->when($this->search, function ($query): void {
                 $search = $this->search;
                 $query->whereHas('participant', fn ($q) => $q
@@ -306,6 +399,15 @@ class AdminEnrollmentList extends Component
                     ->orWhere('phone_e164', 'like', "%{$search}%")
                 );
             })
+            ->when($this->statusFilter, fn ($query) => $query->where('access_status', $this->statusFilter));
+    }
+
+    public function render(): \Illuminate\View\View
+    {
+        $event = Event::findOrFail($this->eventId);
+
+        $enrollments = $this->buildEnrollmentsQuery()
+            ->with(['participant', 'invitation'])
             ->latest()
             ->paginate(20);
 

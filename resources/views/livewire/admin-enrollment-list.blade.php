@@ -254,7 +254,10 @@
 
             <div class="flex items-center justify-end gap-3">
                 <x-ui.button wire:click="cancelBlacklist">Batal</x-ui.button>
-                <x-ui.button wire:click="confirmBlacklist" variant="danger">Blacklist</x-ui.button>
+                <x-ui.button wire:click="confirmBlacklist" wire:loading.attr="disabled" wire:target="confirmBlacklist" variant="danger">
+                    <span wire:loading.remove wire:target="confirmBlacklist">Blacklist</span>
+                    <span wire:loading wire:target="confirmBlacklist">Memproses...</span>
+                </x-ui.button>
             </div>
         </div>
     </div>
@@ -350,7 +353,10 @@
 
             <div class="flex items-center justify-end gap-3">
                 <x-ui.button wire:click="cancelAddForm">Batal</x-ui.button>
-                <x-ui.button wire:click="confirmAdd" variant="primary">Simpan</x-ui.button>
+                <x-ui.button wire:click="confirmAdd" wire:loading.attr="disabled" wire:target="confirmAdd" variant="primary">
+                    <span wire:loading.remove wire:target="confirmAdd">Simpan</span>
+                    <span wire:loading wire:target="confirmAdd">Menyimpan...</span>
+                </x-ui.button>
             </div>
         </div>
     </div>
@@ -414,7 +420,10 @@
 
             <div class="flex items-center justify-end gap-3">
                 <x-ui.button wire:click="cancelEditForm">Batal</x-ui.button>
-                <x-ui.button wire:click="confirmEdit" variant="primary">Simpan</x-ui.button>
+                <x-ui.button wire:click="confirmEdit" wire:loading.attr="disabled" wire:target="confirmEdit" variant="primary">
+                    <span wire:loading.remove wire:target="confirmEdit">Simpan</span>
+                    <span wire:loading wire:target="confirmEdit">Menyimpan...</span>
+                </x-ui.button>
             </div>
         </div>
     </div>

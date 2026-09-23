@@ -20,7 +20,7 @@ Sumber: audit menyeluruh 2026-09-23 (kesesuaian plan, security, UX/fungsi).
 
 ## UX — Admin, prioritas menengah
 
-- [ ] Tambah `wire:loading.attr="disabled"` konsisten di semua form Simpan (sekarang cuma ada di `OpsEventManual` & `AdminImportPeserta`) — target: `AdminEventForm`, `AdminPrintTemplateForm`, modal tambah/edit peserta
+- [x] Tambah guard double-submit + label swap "Menyimpan..." konsisten di semua form Simpan — fixed 2026-09-23: `AdminEventForm`, `AdminUserForm`, `AdminPrintTemplateForm` (Alpine `saving` flag, bukan `wire:loading` karena submitnya lewat Alpine method), modal tambah/edit/blacklist peserta di `AdminEnrollmentList`
 - [ ] Bulk action + filter status akses di `AdminEnrollmentList` (buat event 500+ peserta)
 - [ ] Search/filter di halaman Laporan (`AdminLaporan`)
 

@@ -2,7 +2,10 @@
     <x-ui.header :title="$userId ? 'Edit Pengguna' : 'Tambah Pengguna'">
         <x-slot:actions>
             <x-ui.button href="{{ route('admin.users.index') }}">Batal</x-ui.button>
-            <x-ui.button wire:click="save" variant="primary">Simpan</x-ui.button>
+            <x-ui.button wire:click="save" wire:loading.attr="disabled" wire:target="save" variant="primary">
+                <span wire:loading.remove wire:target="save">Simpan</span>
+                <span wire:loading wire:target="save">Menyimpan...</span>
+            </x-ui.button>
         </x-slot:actions>
     </x-ui.header>
 

@@ -9,7 +9,10 @@
     <x-ui.header :title="$templateId ? 'Edit Template Cetak' : 'Tambah Template Cetak'">
         <x-slot:actions>
             <x-ui.button href="{{ route('admin.print-templates.index') }}">Batal</x-ui.button>
-            <x-ui.button x-on:click="submit()" variant="primary">Simpan</x-ui.button>
+            <x-ui.button x-on:click="submit()" x-bind:disabled="saving" variant="primary">
+                <span x-show="!saving">Simpan</span>
+                <span x-show="saving">Menyimpan...</span>
+            </x-ui.button>
         </x-slot:actions>
     </x-ui.header>
 
@@ -273,6 +276,7 @@ Alpine.data('qrCanvas', (pageWMm, pageHMm, initX, initY, initW, initH) => ({
     qrHMm: initH,
     qr: { x: 0, y: 0, w: 0, h: 0 }, // px
     _drag: null,
+    saving: false,
 
     init() {
         this.recalc();
@@ -401,6 +405,9 @@ Alpine.data('qrCanvas', (pageWMm, pageHMm, initX, initY, initW, initH) => ({
     },
 
     async submit() {
+        if (this.saving) return;
+        this.saving = true;
+
         // Alpine holds the live-edited values; push them into the Livewire
         // properties in one round trip, then validate/save.
         await this.$wire.applyCanvasValues(
@@ -412,7 +419,10 @@ Alpine.data('qrCanvas', (pageWMm, pageHMm, initX, initY, initW, initH) => ({
             Number(this.qrHMm) || 0,
         );
 
-        this.$wire.save();
+        await this.$wire.save();
+
+        // Only reached if save() didn't redirect (e.g. validation failed).
+        this.saving = false;
     },
 }));
 </script>

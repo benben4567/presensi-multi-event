@@ -206,6 +206,22 @@ class RecordAttendanceAction
         string $operatorUserId,
         ?string $manualNote = null,
     ): AttendanceScanResult {
+        if ($enrollment->event_id !== $event->id) {
+            $this->writeScanAttempt(
+                eventId: $event->id,
+                sessionId: $session->id,
+                eventParticipantId: $enrollment->id,
+                source: ScanSource::Manual,
+                code: ScanResultCode::EventMismatch,
+                message: 'Peserta bukan untuk event ini',
+                deviceUuid: $deviceUuid,
+                operatorUserId: $operatorUserId,
+                manualNote: $manualNote,
+            );
+
+            return $this->rejected(ScanResultCode::EventMismatch, 'Peserta bukan untuk event ini', $enrollment);
+        }
+
         $eventError = $this->getEventStatusError($event);
 
         if ($eventError !== null) {

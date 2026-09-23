@@ -417,6 +417,29 @@ class RecordAttendanceActionTest extends TestCase
     // ── Manual: rejection paths ────────────────────────────────────────────
 
     #[Test]
+    public function manual_enrollment_from_another_event_rejected(): void
+    {
+        $otherEvent = Event::factory()->open()->create([
+            'start_at' => now()->subDay(),
+            'end_at' => now()->addDays(3),
+        ]);
+        $otherEnrollment = EventParticipant::factory()->for($otherEvent)->create();
+
+        $result = $this->action->executeManual(
+            $this->event,
+            $this->session,
+            $otherEnrollment,
+            AttendanceAction::CheckIn,
+            $this->deviceUuid,
+            $this->operator->id,
+        );
+
+        $this->assertTrue($result->isRejected());
+        $this->assertEquals(ScanResultCode::EventMismatch, $result->code);
+        $this->assertDatabaseCount('attendance_logs', 0);
+    }
+
+    #[Test]
     public function manual_event_closed_rejected(): void
     {
         $closedEvent = Event::factory()->closed()->create();

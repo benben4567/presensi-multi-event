@@ -190,7 +190,7 @@
                     <td class="px-4 py-3">
                         <div class="flex items-center justify-end gap-1.5">
 
-                            {{-- Edit data peserta --}}
+                            {{-- Edit data peserta (paling sering dipakai, tetap inline) --}}
                             <x-ui.button
                                 wire:click="openEditForm({{ $enrollment->id }})"
                                 size="sm"
@@ -198,57 +198,117 @@
                                 Edit
                             </x-ui.button>
 
-                            {{-- Cetak kartu undangan individu --}}
-                            @if($enrollment->invitation?->token && !$enrollment->invitation->isRevoked())
-                                <x-ui.button
-                                    href="{{ route('admin.events.participants.card', [$event, $enrollment]) }}"
-                                    size="sm"
-                                    target="_blank"
+                            {{-- Aksi lain — dropdown biar baris gak penuh tombol --}}
+                            <div
+                                class="relative inline-block text-left"
+                                x-data="{
+                                    open: false,
+                                    top: 0,
+                                    left: 0,
+                                    toggle() {
+                                        this.open = !this.open;
+                                        if (this.open) {
+                                            const r = $refs.trigger.getBoundingClientRect();
+                                            this.top = r.bottom + 4;
+                                            this.left = r.right - 224;
+                                        }
+                                    },
+                                }"
+                            >
+                                <button
+                                    type="button"
+                                    x-ref="trigger"
+                                    @click="toggle()"
+                                    class="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-gray-300 text-gray-500 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-700"
                                 >
-                                    Cetak
-                                </x-ui.button>
+                                    <x-tabler-dots-vertical class="w-4 h-4" />
+                                </button>
 
-                                @if($event->invitation_info_pdf_path)
-                                    <x-ui.button
-                                        href="{{ route('admin.events.participants.card-with-attachment', [$event, $enrollment]) }}"
-                                        size="sm"
-                                        target="_blank"
+                                {{-- Teleport ke <body> biar gak ke-clip overflow-x-auto tabel --}}
+                                <div x-teleport="body">
+                                    <div
+                                        x-show="open"
+                                        @click.outside="if (!$refs.trigger.contains($event.target)) open = false"
+                                        x-transition:enter="transition ease-out duration-100"
+                                        x-transition:enter-start="opacity-0 scale-95"
+                                        x-transition:enter-end="opacity-100 scale-100"
+                                        x-transition:leave="transition ease-in duration-75"
+                                        x-transition:leave-start="opacity-100 scale-100"
+                                        x-transition:leave-end="opacity-0 scale-95"
+                                        :style="`top:${top}px; left:${left}px;`"
+                                        class="fixed z-50 w-56 rounded-lg border border-gray-200 bg-white shadow-md dark:border-gray-700 dark:bg-gray-800"
+                                        style="display: none"
                                     >
-                                        Cetak + Lampiran
-                                    </x-ui.button>
-                                @endif
-                            @endif
+                                        <div class="py-1">
+                                            {{-- Cetak kartu undangan individu --}}
+                                            @if($enrollment->invitation?->token && !$enrollment->invitation->isRevoked())
+                                                <a
+                                                    href="{{ route('admin.events.participants.card', [$event, $enrollment]) }}"
+                                                    target="_blank"
+                                                    @click="open = false"
+                                                    class="flex items-center gap-2.5 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700"
+                                                >
+                                                    <x-tabler-printer class="w-4 h-4 shrink-0 text-blue-500" />
+                                                    Cetak
+                                                </a>
 
-                            {{-- Aktifkan Kembali (disabled or blacklisted) --}}
-                            @if($enrollment->access_status !== \App\Enums\AccessStatus::Allowed)
-                                <x-ui.button
-                                    wire:click="confirmEnable({{ $enrollment->id }})"
-                                    size="sm"
-                                >
-                                    Aktifkan Kembali
-                                </x-ui.button>
-                            @endif
+                                                @if($event->invitation_info_pdf_path)
+                                                    <a
+                                                        href="{{ route('admin.events.participants.card-with-attachment', [$event, $enrollment]) }}"
+                                                        target="_blank"
+                                                        @click="open = false"
+                                                        class="flex items-center gap-2.5 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700"
+                                                    >
+                                                        <x-tabler-file-type-pdf class="w-4 h-4 shrink-0 text-blue-500" />
+                                                        Cetak + Lampiran
+                                                    </a>
+                                                @endif
 
-                            {{-- Nonaktifkan (allowed or blacklisted) --}}
-                            @if($enrollment->access_status !== \App\Enums\AccessStatus::Disabled)
-                                <x-ui.button
-                                    wire:click="confirmDisable({{ $enrollment->id }})"
-                                    size="sm"
-                                >
-                                    Nonaktifkan
-                                </x-ui.button>
-                            @endif
+                                                <div class="my-1 border-t border-gray-100 dark:border-gray-700"></div>
+                                            @endif
 
-                            {{-- Blacklist (allowed or disabled) --}}
-                            @if($enrollment->access_status !== \App\Enums\AccessStatus::Blacklisted)
-                                <x-ui.button
-                                    wire:click="openBlacklist({{ $enrollment->id }})"
-                                    variant="danger"
-                                    size="sm"
-                                >
-                                    Blacklist
-                                </x-ui.button>
-                            @endif
+                                            {{-- Aktifkan Kembali (disabled or blacklisted) --}}
+                                            @if($enrollment->access_status !== \App\Enums\AccessStatus::Allowed)
+                                                <button
+                                                    type="button"
+                                                    wire:click="confirmEnable({{ $enrollment->id }})"
+                                                    @click="open = false"
+                                                    class="flex items-center w-full gap-2.5 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700"
+                                                >
+                                                    <x-tabler-player-play class="w-4 h-4 shrink-0 text-green-500" />
+                                                    Aktifkan Kembali
+                                                </button>
+                                            @endif
+
+                                            {{-- Nonaktifkan (allowed or blacklisted) --}}
+                                            @if($enrollment->access_status !== \App\Enums\AccessStatus::Disabled)
+                                                <button
+                                                    type="button"
+                                                    wire:click="confirmDisable({{ $enrollment->id }})"
+                                                    @click="open = false"
+                                                    class="flex items-center w-full gap-2.5 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700"
+                                                >
+                                                    <x-tabler-player-pause class="w-4 h-4 shrink-0 text-yellow-500" />
+                                                    Nonaktifkan
+                                                </button>
+                                            @endif
+
+                                            {{-- Blacklist (allowed or disabled) --}}
+                                            @if($enrollment->access_status !== \App\Enums\AccessStatus::Blacklisted)
+                                                <button
+                                                    type="button"
+                                                    wire:click="openBlacklist({{ $enrollment->id }})"
+                                                    @click="open = false"
+                                                    class="flex items-center w-full gap-2.5 px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
+                                                >
+                                                    <x-tabler-ban class="w-4 h-4 shrink-0" />
+                                                    Blacklist
+                                                </button>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
 
                         </div>
                     </td>

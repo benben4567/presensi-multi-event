@@ -4,6 +4,7 @@
 #   Prod : docker-compose -f docker-compose.yml -f docker-compose.prod.yml up
 services:
   php:
+    image: presensi-qr-php
     build:
       context: .
       dockerfile: docker/php/Dockerfile

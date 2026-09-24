@@ -24,10 +24,7 @@ services:
   # --max-time=3600: worker auto-restart tiap jam, biar ambil kode baru
   # setelah deploy (queue:work cache aplikasi di memory, gak auto-reload).
   queue:
-    build:
-      context: .
-      dockerfile: docker/php/Dockerfile
-      target: production
+    image: presensi-qr-php
     container_name: checkin_queue
     working_dir: /var/www/html
     command: php artisan queue:work --tries=3 --backoff=30 --max-time=3600

@@ -40,7 +40,7 @@ Konteks: bulk export Kartu Undangan sebelumnya 1 PDF banyak halaman, dipakai adm
 
 ## Optimasi — Ukuran file PDF QR (siap dikerjakan)
 
-- [ ] **PDF Kartu Undangan & Lembar Stiker kegedean** — root cause: `generateQrPng()` (`InvitationCardController.php:414-443`) pakai `imagecreatetruecolor()` buat gambar QR yang cuma hitam-putih → PNG 24-bit RGB, padahal FPDF embed stream PNG apa adanya tanpa re-compress (`Image()`). Fix: ganti `imagecreatetruecolor()` → `imagecreate()` (palette 2 warna) supaya GD nulis PNG 1-bit, plus `imagepng($img, $tmpFile, 9)` (max compression level). Zero risk ke kualitas/readability scan — cuma ganti mode storage pixel, bukan resolusi/isi QR. Estimasi size turun ~10-20x per QR image.
+- [x] **PDF Kartu Undangan & Lembar Stiker kegedean** — fixed 2026-09-24. Root cause: `generateQrPng()` (sekarang di `app/Support/InvitationCardRenderer.php`, satu tempat dipakai semua jalur PDF) pakai `imagecreatetruecolor()` buat gambar QR yang cuma hitam-putih → PNG 24-bit RGB, padahal FPDF embed stream PNG apa adanya tanpa re-compress (`Image()`). Fix: `imagecreatetruecolor()` → `imagecreate()` (palette 2 warna, GD nulis PNG 1-bit) + `imagepng($img, $tmpFile, 9)` (max compression). Zero risk ke kualitas/readability scan. **Diukur beneran**: 3223 bytes → 835 bytes per QR (~3.9x lebih kecil, bukan 10-20x seperti estimasi awal — DEFLATE di truecolor lama udah lumayan efisien buat gambar flat-color, jadi gain-nya gak sebesar taksiran kasar).
 - [ ] (opsional, butuh approval + test cetak+scan fisik) turun `pixelSize` (600 kartu / 300 stiker) kalau ketauan oversampled buat ukuran cetak 34mm/14mm — trade-off ke reliability HID scanner, jangan asal potong tanpa test.
 
 ## UX — Prioritas rendah

@@ -207,7 +207,10 @@ class InvitationCardRenderer
         $moduleSize = (int) floor($pixelSize / ($matrixSize + $margin * 2));
         $imgSize = ($matrixSize + $margin * 2) * $moduleSize;
 
-        $img = imagecreatetruecolor($imgSize, $imgSize);
+        // imagecreate() (palette mode) instead of imagecreatetruecolor() — the
+        // QR is pure black/white, so GD writes a 1-bit PNG instead of 24-bit,
+        // which is what FPDF embeds verbatim (no re-compression on its side).
+        $img = imagecreate($imgSize, $imgSize);
         $white = imagecolorallocate($img, 255, 255, 255);
         $black = imagecolorallocate($img, 0, 0, 0);
         imagefill($img, 0, 0, $white);
@@ -223,7 +226,7 @@ class InvitationCardRenderer
         }
 
         $tmpFile = tempnam(sys_get_temp_dir(), 'qr_').'.png';
-        imagepng($img, $tmpFile);
+        imagepng($img, $tmpFile, 9);
         imagedestroy($img);
 
         return $tmpFile;

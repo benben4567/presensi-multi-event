@@ -193,6 +193,36 @@
                             </div>
                         @endif
                     </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                            PDF Info Tambahan
+                        </label>
+                        <p class="text-xs text-gray-400 dark:text-gray-500 mb-2">
+                            Opsional. Halaman PDF ini (bisa lebih dari 1 halaman) akan ditempel setelah kartu QR saat undangan dikirim lewat email.
+                        </p>
+
+                        @if ($existingInvitationInfoPdfPath && ! $invitationInfoPdf)
+                            <div class="flex items-center gap-2 mb-2 text-xs text-gray-600 dark:text-gray-300">
+                                <x-tabler-file-type-pdf class="w-4 h-4 text-red-500 shrink-0" />
+                                Sudah ada PDF terunggah — unggah file baru untuk menggantinya.
+                            </div>
+                        @endif
+
+                        <input
+                            type="file"
+                            wire:model="invitationInfoPdf"
+                            accept=".pdf"
+                            class="block w-full text-sm text-gray-600 dark:text-gray-300
+                                   file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0
+                                   file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700
+                                   hover:file:bg-blue-100 dark:file:bg-blue-900/30 dark:file:text-blue-300"
+                        />
+                        <div wire:loading wire:target="invitationInfoPdf" class="mt-1 text-xs text-gray-500">Mengupload...</div>
+                        @error('invitationInfoPdf')
+                            <p class="mt-1.5 text-xs text-red-600 dark:text-red-400">{{ $message }}</p>
+                        @enderror
+                    </div>
                 </div>
             </div>
 

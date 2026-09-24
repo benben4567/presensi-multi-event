@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Actions\ImportPesertaAction;
 use App\Actions\SetEnrollmentAccessAction;
 use App\Enums\AccessStatus;
+use App\Jobs\SendInvitationCardEmailJob;
 use App\Livewire\AdminEnrollmentList;
 use App\Models\Event;
 use App\Models\EventParticipant;
@@ -12,6 +13,7 @@ use App\Models\Invitation;
 use App\Models\Participant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Queue;
 use Livewire\Livewire;
 use PHPUnit\Framework\Attributes\Test;
 use Spatie\Permission\Models\Role;
@@ -315,6 +317,87 @@ class EnrollmentListTest extends TestCase
             ->set('search', 'Budi')
             ->set('selectAll', true)
             ->assertCount('selected', 1);
+    }
+
+    #[Test]
+    public function admin_can_add_participant_with_email(): void
+    {
+        Livewire::actingAs($this->admin)
+            ->test(AdminEnrollmentList::class, ['event' => $this->event])
+            ->set('newName', 'Citra Dewi')
+            ->set('newPhone', '08123456789')
+            ->set('newEmail', 'citra@example.com')
+            ->call('confirmAdd')
+            ->assertHasNoErrors();
+
+        $this->assertSame('citra@example.com', Participant::where('phone_e164', '+628123456789')->first()->email);
+    }
+
+    #[Test]
+    public function adding_participant_rejects_invalid_email(): void
+    {
+        Livewire::actingAs($this->admin)
+            ->test(AdminEnrollmentList::class, ['event' => $this->event])
+            ->set('newName', 'Citra Dewi')
+            ->set('newPhone', '08123456789')
+            ->set('newEmail', 'bukan-email')
+            ->call('confirmAdd')
+            ->assertHasErrors(['newEmail']);
+    }
+
+    #[Test]
+    public function admin_can_edit_participant_email(): void
+    {
+        $this->importCsv("nama,no_hp\nBudi Santoso,08123456789\n");
+        $participant = Participant::where('phone_e164', '+628123456789')->first();
+        $enrollment = EventParticipant::where('participant_id', $participant->id)->first();
+
+        Livewire::actingAs($this->admin)
+            ->test(AdminEnrollmentList::class, ['event' => $this->event])
+            ->call('openEditForm', $enrollment->id)
+            ->assertSet('editEmail', '')
+            ->set('editEmail', 'budi@example.com')
+            ->call('confirmEdit')
+            ->assertHasNoErrors();
+
+        $this->assertSame('budi@example.com', $participant->fresh()->email);
+    }
+
+    // ── Kirim undangan via email ─────────────────────────────────────────
+
+    #[Test]
+    public function send_invitation_emails_dispatches_job_only_for_eligible_participants(): void
+    {
+        Queue::fake();
+
+        $this->importCsv("nama,no_hp,email\nBudi Santoso,08123456789,budi@example.com\nAni Rahayu,08987654321\n");
+
+        Livewire::actingAs($this->admin)
+            ->test(AdminEnrollmentList::class, ['event' => $this->event])
+            ->call('sendInvitationEmails')
+            ->assertDispatched('toast');
+
+        Queue::assertPushed(SendInvitationCardEmailJob::class, 1);
+
+        $budi = Participant::where('phone_e164', '+628123456789')->first();
+        $eligibleEnrollment = EventParticipant::where('participant_id', $budi->id)->first();
+
+        Queue::assertPushed(SendInvitationCardEmailJob::class, fn ($job) => $job->eventParticipantId === (string) $eligibleEnrollment->id);
+    }
+
+    #[Test]
+    public function send_invitation_emails_shows_warning_when_nobody_eligible(): void
+    {
+        Queue::fake();
+
+        $this->importCsv("nama,no_hp\nBudi Santoso,08123456789\n");
+
+        Livewire::actingAs($this->admin)
+            ->test(AdminEnrollmentList::class, ['event' => $this->event])
+            ->call('confirmSendInvitationEmails')
+            ->assertDispatched('toast');
+
+        Queue::assertNotPushed(SendInvitationCardEmailJob::class);
     }
 
     // ── Helper ─────────────────────────────────────────────────────────────

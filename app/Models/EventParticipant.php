@@ -22,6 +22,7 @@ class EventParticipant extends Model
         'access_reason',
         'access_updated_at',
         'access_updated_by',
+        'invitation_email_sent_at',
     ];
 
     protected function casts(): array
@@ -30,6 +31,7 @@ class EventParticipant extends Model
             'meta' => 'array',
             'access_status' => AccessStatus::class,
             'access_updated_at' => 'datetime',
+            'invitation_email_sent_at' => 'datetime',
         ];
     }
 

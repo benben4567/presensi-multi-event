@@ -11,8 +11,9 @@ Aplikasi web **presensi berbasis QR Code** untuk event multi-hari. Dirancang unt
 - **Multi-Event & Multi-Hari** — satu sistem untuk banyak event; presensi dihitung per hari
 - **Scan QR otomatis** — scanner HID langsung memproses tanpa klik tombol
 - **Check-in & Check-out** — dikonfigurasi per event
-- **Impor Peserta via Excel** — kolom `nama` + `no_hp`; normalisasi E.164 otomatis
+- **Impor Peserta via Excel** — kolom `nama` + `no_hp`; kolom `email` opsional; normalisasi E.164 otomatis
 - **Kartu Undangan QR (PDF)** — cetak individu atau ekspor massal seluruh peserta
+- **Kirim Undangan via Email** — kirim kartu QR ke tiap peserta satu-satu (queued), digabung otomatis dengan PDF info tambahan per event bila diunggah
 - **Lembar Stiker (PDF)** — label 16 × 22 mm, ±110 label per A4
 - **Presensi Manual** — fallback pencarian peserta by nama/no HP
 - **Access Control** — nonaktifkan atau blacklist peserta per event; QR ikut di-revoke/unrevoke
@@ -54,6 +55,7 @@ Scan QR.
 | `simplesoftwareio/simple-qrcode` | Generate QR Code |
 | `rap2hpoutre/fast-excel` | Import/export Excel |
 | `codedge/laravel-fpdf` | Generate PDF (kartu undangan & stiker) |
+| `setasign/fpdi` | Merge PDF info tambahan ke kartu undangan saat kirim email |
 | `spatie/laravel-activitylog` | Audit log aktivitas |
 | `opcodesio/log-viewer` | Viewer error log |
 | `romanzipp/laravel-queue-monitor` | Monitor queue jobs |
@@ -132,9 +134,11 @@ Akses aplikasi di **http://localhost:8080** (dev) atau **http://localhost:80** (
 
 1. **Admin** membuat Event dan mengisi kode event (wajib untuk fitur export stiker)
 2. **Admin** mengimpor peserta via Excel — QR token otomatis di-generate per peserta
-3. **Admin** mengunduh/mencetak Kartu Undangan QR atau Lembar Stiker
+3. **Admin** mengunduh/mencetak Kartu Undangan QR atau Lembar Stiker, atau memilih "Kirim Undangan via Email" untuk mengirim ke peserta yang punya email (butuh queue worker aktif — lihat catatan di bawah)
 4. **Operator** login, pilih event dan sesi (hari), mulai scan QR
 5. **Admin** memantau presensi dan mengekspor laporan kehadiran
+
+> **Kirim Undangan via Email** butuh konfigurasi `MAIL_*` di `.env` dan queue worker berjalan (`docker exec checkin_php php artisan queue:listen`, driver default `database`). Progress pengiriman bisa dipantau di halaman Monitoring → Queue.
 
 ---
 

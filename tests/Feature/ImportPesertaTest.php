@@ -187,6 +187,54 @@ class ImportPesertaTest extends TestCase
         $this->assertEquals('IT', Participant::first()->meta['unit']);
     }
 
+    #[Test]
+    public function action_stores_valid_email(): void
+    {
+        $csv = "nama,no_hp,email\nBudi,08123456789,budi@example.com\n";
+        $path = $this->writeTempCsv($csv);
+
+        (new ImportPesertaAction)->execute($this->event, $path);
+
+        $this->assertDatabaseHas('participants', ['email' => 'budi@example.com']);
+    }
+
+    #[Test]
+    public function action_allows_missing_email(): void
+    {
+        $csv = "nama,no_hp\nBudi,08123456789\n";
+        $path = $this->writeTempCsv($csv);
+
+        $result = (new ImportPesertaAction)->execute($this->event, $path);
+
+        $this->assertEquals(1, $result['imported']);
+        $this->assertNull(Participant::first()->email);
+    }
+
+    #[Test]
+    public function action_errors_on_invalid_email(): void
+    {
+        $csv = "nama,no_hp,email\nBudi,08123456789,bukan-email\n";
+        $path = $this->writeTempCsv($csv);
+
+        $result = (new ImportPesertaAction)->execute($this->event, $path);
+
+        $this->assertEquals(0, $result['imported']);
+        $this->assertEquals(1, $result['errors']);
+        $this->assertStringContainsString('Email tidak valid', $result['error_rows'][0]['alasan']);
+    }
+
+    #[Test]
+    public function reimport_updates_email_for_already_enrolled_participant(): void
+    {
+        $csv1 = "nama,no_hp\nBudi,08123456789\n";
+        (new ImportPesertaAction)->execute($this->event, $this->writeTempCsv($csv1));
+
+        $csv2 = "nama,no_hp,email\nBudi,08123456789,budi@example.com\n";
+        (new ImportPesertaAction)->execute($this->event, $this->writeTempCsv($csv2));
+
+        $this->assertEquals('budi@example.com', Participant::first()->email);
+    }
+
     // ── Livewire component ─────────────────────────────────────────────────
 
     #[Test]

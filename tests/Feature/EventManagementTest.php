@@ -8,6 +8,8 @@ use App\Livewire\AdminEventIndex;
 use App\Models\Event;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 use PHPUnit\Framework\Attributes\Test;
 use Spatie\Permission\Models\Role;
@@ -96,6 +98,42 @@ class EventManagementTest extends TestCase
             'name' => 'Seminar Nasional 2026',
             'code' => 'SN-2026',
         ]);
+    }
+
+    #[Test]
+    public function admin_can_upload_invitation_info_pdf(): void
+    {
+        Storage::fake('public');
+
+        Livewire::actingAs($this->admin)
+            ->test(AdminEventForm::class)
+            ->set('name', 'Seminar Nasional 2026')
+            ->set('startAt', '2026-03-01T08:00')
+            ->set('endAt', '2026-03-01T17:00')
+            ->set('status', 'draft')
+            ->set('invitationInfoPdf', UploadedFile::fake()->create('info.pdf', 100, 'application/pdf'))
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $event = Event::where('name', 'Seminar Nasional 2026')->first();
+        $this->assertNotNull($event->invitation_info_pdf_path);
+        Storage::disk('public')->assertExists($event->invitation_info_pdf_path);
+    }
+
+    #[Test]
+    public function invitation_info_pdf_rejects_non_pdf_file(): void
+    {
+        Storage::fake('public');
+
+        Livewire::actingAs($this->admin)
+            ->test(AdminEventForm::class)
+            ->set('name', 'Seminar Nasional 2026')
+            ->set('startAt', '2026-03-01T08:00')
+            ->set('endAt', '2026-03-01T17:00')
+            ->set('status', 'draft')
+            ->set('invitationInfoPdf', UploadedFile::fake()->image('info.jpg'))
+            ->call('save')
+            ->assertHasErrors(['invitationInfoPdf']);
     }
 
     #[Test]

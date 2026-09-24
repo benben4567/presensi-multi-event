@@ -33,6 +33,7 @@ class ImportPesertaAction
 
             $nama = trim($row['nama'] ?? '');
             $noHp = trim((string) ($row['no_hp'] ?? ''));
+            $email = trim((string) ($row['email'] ?? ''));
 
             if ($nama === '') {
                 $errors++;
@@ -50,11 +51,20 @@ class ImportPesertaAction
                 continue;
             }
 
+            if ($email !== '' && ! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                $errors++;
+                $errorRows[] = ['baris' => $rowNum, 'nama' => $nama, 'no_hp' => $noHp, 'alasan' => 'Email tidak valid'];
+
+                continue;
+            }
+
+            $email = $email !== '' ? $email : null;
+
             // Check if this phone is already enrolled in the event.
             $existingParticipant = Participant::where('phone_e164', $phoneE164)->first();
 
             // Collect extra columns as meta.
-            $reservedKeys = ['nama', 'no_hp'];
+            $reservedKeys = ['nama', 'no_hp', 'email'];
             $meta = [];
             foreach ($row as $key => $value) {
                 if (! in_array(strtolower($key), $reservedKeys)) {
@@ -71,10 +81,15 @@ class ImportPesertaAction
                     ->exists();
 
                 if ($alreadyEnrolled) {
+                    $updates = [];
                     if (! empty($meta)) {
-                        $existingParticipant->update([
-                            'meta' => array_merge($existingParticipant->meta ?? [], $meta),
-                        ]);
+                        $updates['meta'] = array_merge($existingParticipant->meta ?? [], $meta);
+                    }
+                    if ($email !== null) {
+                        $updates['email'] = $email;
+                    }
+                    if (! empty($updates)) {
+                        $existingParticipant->update($updates);
                     }
 
                     $skipped++;
@@ -86,13 +101,20 @@ class ImportPesertaAction
 
             $participant = Participant::firstOrCreate(
                 ['phone_e164' => $phoneE164],
-                ['name' => $nama, 'meta' => empty($meta) ? null : $meta],
+                ['name' => $nama, 'email' => $email, 'meta' => empty($meta) ? null : $meta],
             );
 
-            if (! $participant->wasRecentlyCreated && ! empty($meta)) {
-                $participant->update([
-                    'meta' => array_merge($participant->meta ?? [], $meta),
-                ]);
+            if (! $participant->wasRecentlyCreated) {
+                $updates = [];
+                if (! empty($meta)) {
+                    $updates['meta'] = array_merge($participant->meta ?? [], $meta);
+                }
+                if ($email !== null) {
+                    $updates['email'] = $email;
+                }
+                if (! empty($updates)) {
+                    $participant->update($updates);
+                }
             }
 
             (new EnrollParticipantAction)->execute($event, $participant);

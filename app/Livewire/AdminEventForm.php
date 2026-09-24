@@ -7,15 +7,21 @@ use App\Models\EventSession;
 use App\Models\PrintTemplate;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 
 #[Layout('layouts.admin')]
 #[Title('Event')]
 class AdminEventForm extends Component
 {
+    use WithFileUploads;
+
+    public const MAX_INFO_PDF_KB = 10240;
+
     public ?string $eventId = null;
 
     public string $code = '';
@@ -44,6 +50,10 @@ class AdminEventForm extends Component
     /** Key name when printCaptionType === 'meta', e.g. 'jabatan'. */
     public string $printCaptionMetaKey = '';
 
+    public string $existingInvitationInfoPdfPath = '';
+
+    public $invitationInfoPdf = null;
+
     public function mount(?Event $event = null): void
     {
         if ($event && $event->exists) {
@@ -61,6 +71,7 @@ class AdminEventForm extends Component
             $extra = array_diff($allFields, $predefined);
             $this->extraDisplayFields = implode(', ', $extra);
             $this->printTemplateId = (string) ($event->settings['print_template_id'] ?? '');
+            $this->existingInvitationInfoPdfPath = $event->invitation_info_pdf_path ?? '';
 
             $captionField = $event->settings['print_caption_field'] ?? 'name';
             if (str_starts_with((string) $captionField, 'meta.')) {
@@ -91,6 +102,7 @@ class AdminEventForm extends Component
             'extraDisplayFields' => ['nullable', 'string', 'max:500'],
             'printCaptionType' => ['required', Rule::in(['name', 'invitation_code', 'phone', 'none', 'meta'])],
             'printCaptionMetaKey' => ['required_if:printCaptionType,meta', 'nullable', 'string', 'max:100'],
+            'invitationInfoPdf' => ['nullable', 'file', 'mimes:pdf', 'max:'.self::MAX_INFO_PDF_KB],
         ];
     }
 
@@ -115,6 +127,16 @@ class AdminEventForm extends Component
             ? 'meta.'.trim($this->printCaptionMetaKey)
             : $this->printCaptionType;
 
+        $infoPdfPath = $this->existingInvitationInfoPdfPath;
+
+        if ($this->invitationInfoPdf) {
+            if ($infoPdfPath) {
+                Storage::disk('public')->delete($infoPdfPath);
+            }
+
+            $infoPdfPath = $this->invitationInfoPdf->store('invitation-info-pdfs', 'public');
+        }
+
         $data = [
             'code' => $this->code ?: null,
             'name' => $this->name,
@@ -127,6 +149,7 @@ class AdminEventForm extends Component
                 'print_template_id' => $this->printTemplateId !== '' ? (int) $this->printTemplateId : null,
                 'print_caption_field' => $captionField,
             ],
+            'invitation_info_pdf_path' => $infoPdfPath ?: null,
             'updated_by' => Auth::id(),
         ];
 

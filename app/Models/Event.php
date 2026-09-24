@@ -22,6 +22,7 @@ class Event extends Model
         'status',
         'override_until',
         'settings',
+        'invitation_info_pdf_path',
         'created_by',
         'updated_by',
     ];

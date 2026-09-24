@@ -14,6 +14,7 @@ class Participant extends Model
     protected $fillable = [
         'name',
         'phone_e164',
+        'email',
         'meta',
     ];
 

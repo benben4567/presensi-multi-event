@@ -5,6 +5,7 @@ namespace App\Livewire;
 use App\Actions\EnrollParticipantAction;
 use App\Actions\SetEnrollmentAccessAction;
 use App\Enums\AccessStatus;
+use App\Jobs\SendInvitationCardEmailJob;
 use App\Models\Event;
 use App\Models\EventParticipant;
 use App\Models\Participant;
@@ -49,6 +50,8 @@ class AdminEnrollmentList extends Component
 
     public string $newPhone = '';
 
+    public string $newEmail = '';
+
     /** @var array<int, array{key: string, value: string}> */
     public array $newMeta = [];
 
@@ -61,6 +64,8 @@ class AdminEnrollmentList extends Component
     public string $editName = '';
 
     public string $editPhone = '';
+
+    public string $editEmail = '';
 
     public function mount(Event $event): void
     {
@@ -157,6 +162,64 @@ class AdminEnrollmentList extends Component
         $this->clearSelection();
     }
 
+    // ── Kirim undangan via email ─────────────────────────────────────────
+
+    public function confirmSendInvitationEmails(): void
+    {
+        $count = $this->eligibleForEmailQuery()->count();
+
+        if ($count === 0) {
+            $this->dispatch('toast', message: 'Tidak ada peserta dengan email yang bisa dikirimi undangan.', type: 'warning');
+
+            return;
+        }
+
+        $this->dispatch('show-confirm',
+            message: "Kirim undangan ke {$count} peserta yang punya email? Proses berjalan di latar belakang.",
+            confirmedEvent: 'send-invitation-emails',
+            confirmedData: [],
+            confirmLabel: 'Kirim',
+            cancelLabel: 'Batal',
+        );
+    }
+
+    #[On('send-invitation-emails')]
+    public function sendInvitationEmails(): void
+    {
+        $eligible = $this->eligibleForEmailQuery()->get();
+
+        foreach ($eligible as $ep) {
+            SendInvitationCardEmailJob::dispatch($ep->id);
+        }
+
+        $totalAllowed = EventParticipant::where('event_id', $this->eventId)
+            ->where('access_status', AccessStatus::Allowed->value)
+            ->count();
+        $skipped = $totalAllowed - $eligible->count();
+
+        $message = "Undangan dikirim ke antrean untuk {$eligible->count()} peserta.";
+        if ($skipped > 0) {
+            $message .= " {$skipped} peserta dilewati (belum ada email atau undangan tidak aktif).";
+        }
+
+        $this->dispatch('toast', message: $message, type: $skipped > 0 ? 'warning' : 'success');
+    }
+
+    /**
+     * Enrollments eligible to receive an invitation email: allowed access,
+     * a valid (non-revoked) invitation, and a participant email on file.
+     *
+     * @return \Illuminate\Database\Eloquent\Builder<EventParticipant>
+     */
+    private function eligibleForEmailQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        return EventParticipant::query()
+            ->where('event_id', $this->eventId)
+            ->where('access_status', AccessStatus::Allowed->value)
+            ->whereHas('participant', fn ($q) => $q->whereNotNull('email'))
+            ->whereHas('invitation', fn ($q) => $q->whereNotNull('token')->whereNull('revoked_at'));
+    }
+
     // ── Disable ───────────────────────────────────────────────────────────
 
     public function confirmDisable(int $enrollmentId): void
@@ -237,7 +300,7 @@ class AdminEnrollmentList extends Component
 
     public function openAddForm(): void
     {
-        $this->reset(['newName', 'newPhone']);
+        $this->reset(['newName', 'newPhone', 'newEmail']);
         $this->newMeta = [['key' => '', 'value' => '']];
         $this->resetErrorBag();
         $this->showAddForm = true;
@@ -246,7 +309,7 @@ class AdminEnrollmentList extends Component
     public function cancelAddForm(): void
     {
         $this->showAddForm = false;
-        $this->reset(['newName', 'newPhone', 'newMeta']);
+        $this->reset(['newName', 'newPhone', 'newEmail', 'newMeta']);
     }
 
     public function addMetaField(): void
@@ -265,7 +328,8 @@ class AdminEnrollmentList extends Component
         $this->validate([
             'newName' => ['required', 'string', 'max:150'],
             'newPhone' => ['required', 'string'],
-        ], [], ['newName' => 'Nama', 'newPhone' => 'No HP']);
+            'newEmail' => ['nullable', 'email', 'max:255'],
+        ], [], ['newName' => 'Nama', 'newPhone' => 'No HP', 'newEmail' => 'Email']);
 
         $phoneE164 = PhoneNumberNormalizer::toE164($this->newPhone);
 
@@ -299,13 +363,18 @@ class AdminEnrollmentList extends Component
                 return;
             }
 
+            $updates = $this->newEmail !== '' ? ['email' => $this->newEmail] : [];
             if (! empty($meta)) {
-                $participant->update(['meta' => array_merge($participant->meta ?? [], $meta)]);
+                $updates['meta'] = array_merge($participant->meta ?? [], $meta);
+            }
+            if (! empty($updates)) {
+                $participant->update($updates);
             }
         } else {
             $participant = Participant::create([
                 'name' => $this->newName,
                 'phone_e164' => $phoneE164,
+                'email' => $this->newEmail !== '' ? $this->newEmail : null,
                 'meta' => empty($meta) ? null : $meta,
             ]);
         }
@@ -325,6 +394,7 @@ class AdminEnrollmentList extends Component
         $this->editingEnrollmentId = $enrollmentId;
         $this->editName = $enrollment->participant->name;
         $this->editPhone = $enrollment->participant->phone_e164 ?? '';
+        $this->editEmail = $enrollment->participant->email ?? '';
         $this->resetErrorBag();
         $this->showEditForm = true;
     }
@@ -332,7 +402,7 @@ class AdminEnrollmentList extends Component
     public function cancelEditForm(): void
     {
         $this->showEditForm = false;
-        $this->reset(['editingEnrollmentId', 'editName', 'editPhone']);
+        $this->reset(['editingEnrollmentId', 'editName', 'editPhone', 'editEmail']);
     }
 
     public function confirmEdit(): void
@@ -340,7 +410,8 @@ class AdminEnrollmentList extends Component
         $this->validate([
             'editName' => ['required', 'string', 'max:150'],
             'editPhone' => ['required', 'string'],
-        ], [], ['editName' => 'Nama', 'editPhone' => 'No HP']);
+            'editEmail' => ['nullable', 'email', 'max:255'],
+        ], [], ['editName' => 'Nama', 'editPhone' => 'No HP', 'editEmail' => 'Email']);
 
         $phoneE164 = PhoneNumberNormalizer::toE164($this->editPhone);
 
@@ -366,6 +437,7 @@ class AdminEnrollmentList extends Component
         $participant->update([
             'name' => $this->editName,
             'phone_e164' => $phoneE164,
+            'email' => $this->editEmail !== '' ? $this->editEmail : null,
         ]);
 
         $this->cancelEditForm();

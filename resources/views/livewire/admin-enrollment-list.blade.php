@@ -56,6 +56,16 @@
                             <x-tabler-table-export class="w-4 h-4 shrink-0 text-green-500" />
                             Mapping Stiker (CSV)
                         </a>
+                        <div class="my-1 border-t border-gray-100 dark:border-gray-700"></div>
+                        <button
+                            type="button"
+                            wire:click="confirmSendInvitationEmails"
+                            @click="open = false"
+                            class="flex items-center w-full gap-2.5 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700"
+                        >
+                            <x-tabler-mail class="w-4 h-4 shrink-0 text-blue-500" />
+                            Kirim Undangan via Email
+                        </button>
                     </div>
                 </div>
             </div>
@@ -360,6 +370,17 @@
             </div>
 
             <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Email
+                </label>
+                <x-ui.input type="email" wire:model="newEmail" placeholder="nama@email.com (opsional)" maxlength="255" />
+                <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">Dipakai untuk kirim undangan lewat email.</p>
+                @error('newEmail')
+                    <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <div class="mb-4">
                 <div class="flex items-center justify-between mb-1">
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
                         Atribut Tambahan
@@ -454,6 +475,17 @@
                 </label>
                 <x-ui.input wire:model="editPhone" placeholder="08xxxxxxxxxx" />
                 @error('editPhone')
+                    <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Email
+                </label>
+                <x-ui.input type="email" wire:model="editEmail" placeholder="nama@email.com (opsional)" maxlength="255" />
+                <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">Dipakai untuk kirim undangan lewat email.</p>
+                @error('editEmail')
                     <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ $message }}</p>
                 @enderror
             </div>

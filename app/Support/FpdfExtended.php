@@ -2,16 +2,25 @@
 
 namespace App\Support;
 
-use Codedge\Fpdf\Fpdf\Fpdf;
+use setasign\Fpdi\FpdfTrait;
+use setasign\Fpdi\FpdiTrait;
 
 /**
- * Extends FPDF with a rounded-rectangle drawing primitive.
+ * Extends FPDF with a rounded-rectangle drawing primitive and FPDI's
+ * page-import capability (setSourceFile/importPage/useTemplate), needed to
+ * merge a static info PDF after each participant's card.
+ *
+ * Mirrors FPDI's own `Fpdi extends FpdfTpl { use FpdiTrait, FpdfTrait; }`
+ * composition — see FpdiCompatibleFpdf for why the template-bookkeeping
+ * trait lives one class up instead of here.
  *
  * FPDF exposes $k (scale factor) and $h (page height in user units) as
  * protected, so we must subclass to access them for raw PDF path commands.
  */
-class FpdfExtended extends Fpdf
+class FpdfExtended extends FpdiCompatibleFpdf
 {
+    use FpdfTrait, FpdiTrait;
+
     /**
      * Draw a rounded rectangle using cubic Bézier curves.
      *

@@ -17,6 +17,7 @@
         "rap2hpoutre/fast-excel": "^5.6",
         "romanzipp/laravel-queue-monitor": "^5.4",
         "secondnetwork/blade-tabler-icons": "^3.37",
+        "setasign/fpdi": "^2.6",
         "simplesoftwareio/simple-qrcode": "^4.2",
         "spatie/laravel-activitylog": "^4.12",
         "spatie/laravel-permission": "^7.2"

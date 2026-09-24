@@ -20,6 +20,7 @@
                     <code class="text-xs bg-gray-100 dark:bg-gray-700 px-1 rounded">.xls</code>,
                     <code class="text-xs bg-gray-100 dark:bg-gray-700 px-1 rounded">.csv</code>).
                     Kolom wajib: <strong>nama</strong>, <strong>no_hp</strong>.
+                    Kolom opsional: <strong>email</strong> (dipakai untuk kirim undangan lewat email).
                     Kolom lain otomatis masuk ke data meta peserta.
                 </p>
 
@@ -125,6 +126,7 @@
                             <tr>
                                 <th class="px-2 py-1.5 text-left">nama</th>
                                 <th class="px-2 py-1.5 text-left">no_hp</th>
+                                <th class="px-2 py-1.5 text-left">email</th>
                                 <th class="px-2 py-1.5 text-left">unit</th>
                             </tr>
                         </thead>
@@ -132,11 +134,13 @@
                             <tr>
                                 <td class="px-2 py-1">Budi Santoso</td>
                                 <td class="px-2 py-1">08123456789</td>
+                                <td class="px-2 py-1">budi@mail.com</td>
                                 <td class="px-2 py-1">IT</td>
                             </tr>
                             <tr>
                                 <td class="px-2 py-1">Ani Rahayu</td>
                                 <td class="px-2 py-1">+62812345678</td>
+                                <td class="px-2 py-1"></td>
                                 <td class="px-2 py-1">HR</td>
                             </tr>
                         </tbody>
@@ -153,7 +157,7 @@
                     </li>
                     <li class="flex items-start gap-1.5">
                         <x-tabler-circle-check class="w-3.5 h-3.5 text-green-500 mt-0.5 flex-shrink-0" />
-                        Kolom selain nama & no_hp masuk ke data meta
+                        Kolom selain nama, no_hp & email masuk ke data meta
                     </li>
                 </ul>
             </div>

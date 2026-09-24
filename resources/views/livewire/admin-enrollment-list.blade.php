@@ -207,6 +207,16 @@
                                 >
                                     Cetak
                                 </x-ui.button>
+
+                                @if($event->invitation_info_pdf_path)
+                                    <x-ui.button
+                                        href="{{ route('admin.events.participants.card-with-attachment', [$event, $enrollment]) }}"
+                                        size="sm"
+                                        target="_blank"
+                                    >
+                                        Cetak + Lampiran
+                                    </x-ui.button>
+                                @endif
                             @endif
 
                             {{-- Aktifkan Kembali (disabled or blacklisted) --}}

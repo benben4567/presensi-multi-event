@@ -164,6 +164,56 @@ class InvitationCardTest extends TestCase
             ->assertNotFound();
     }
 
+    // ── Individual print + lampiran ──────────────────────────────────────────
+
+    #[Test]
+    public function guest_cannot_access_print_with_attachment(): void
+    {
+        $this->get(route('admin.events.participants.card-with-attachment', [$this->event, $this->ep]))
+            ->assertRedirect(route('login'));
+    }
+
+    #[Test]
+    public function operator_cannot_access_print_with_attachment(): void
+    {
+        $this->actingAs($this->operator)
+            ->get(route('admin.events.participants.card-with-attachment', [$this->event, $this->ep]))
+            ->assertForbidden();
+    }
+
+    #[Test]
+    public function admin_print_with_attachment_returns_pdf(): void
+    {
+        $this->actingAs($this->admin)
+            ->get(route('admin.events.participants.card-with-attachment', [$this->event, $this->ep]))
+            ->assertOk()
+            ->assertHeader('content-type', 'application/pdf');
+    }
+
+    #[Test]
+    public function print_with_attachment_returns_404_for_revoked_invitation(): void
+    {
+        $this->invitation->update(['revoked_at' => now()]);
+
+        $this->actingAs($this->admin)
+            ->get(route('admin.events.participants.card-with-attachment', [$this->event, $this->ep]))
+            ->assertNotFound();
+    }
+
+    #[Test]
+    public function print_with_attachment_returns_404_if_enrollment_not_in_event(): void
+    {
+        $otherEvent = Event::factory()->create();
+        $otherEp = EventParticipant::factory()->for($otherEvent)->create();
+        Invitation::factory()->for($otherEp, 'eventParticipant')->create([
+            'token' => Str::random(32),
+        ]);
+
+        $this->actingAs($this->admin)
+            ->get(route('admin.events.participants.card-with-attachment', [$this->event, $otherEp]))
+            ->assertNotFound();
+    }
+
     // ── Sticker sheet PDF ─────────────────────────────────────────────────────
 
     #[Test]

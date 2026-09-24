@@ -58,6 +58,7 @@ Route::middleware(['auth', 'verified', 'role:admin'])
         Route::get('/events/{event}/invitation-cards/sticker', [InvitationCardController::class, 'exportStickerPdf'])->name('events.invitation-cards.sticker');
         Route::get('/events/{event}/invitation-cards/mapping', [InvitationCardController::class, 'exportStickerCsv'])->name('events.invitation-cards.mapping');
         Route::get('/events/{event}/participants/{eventParticipant}/card', [InvitationCardController::class, 'print'])->name('events.participants.card');
+        Route::get('/events/{event}/participants/{eventParticipant}/card-with-attachment', [InvitationCardController::class, 'printWithAttachment'])->name('events.participants.card-with-attachment');
 
         Route::get('/events/{event}/participants/{eventParticipant}/qr', function (\App\Models\Event $event, EventParticipant $eventParticipant) {
             abort_if($eventParticipant->event_id !== $event->id, 404);

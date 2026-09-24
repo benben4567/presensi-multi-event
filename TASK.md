@@ -19,6 +19,7 @@ Konteks: bulk export Kartu Undangan sebelumnya 1 PDF banyak halaman, dipakai adm
   - Kartu-drawing logic diekstrak dari `InvitationCardController` ke `App\Support\InvitationCardRenderer` (dipakai bareng oleh controller & `BuildInvitationEmailPdfAction`) — DRY, dipakai 2 tempat.
   - Monitoring pengiriman lewat halaman existing Monitoring → Queue (`romanzipp/laravel-queue-monitor`, job pakai trait `IsMonitored`).
   - Belum ada: tombol resend khusus yang gagal (baru bisa lihat status di Queue Monitor), tombol hapus PDF info tanpa upload pengganti.
+- [x] **Cetak manual kartu + lampiran (non-email)** — tombol "Cetak + Lampiran" per baris di `AdminEnrollmentList` (muncul cuma kalau event punya `invitation_info_pdf_path`), route baru `InvitationCardController::printWithAttachment` reuse `BuildInvitationEmailPdfAction` yang sama dipakai job email — output PDF inline (kartu + lampiran ter-merge), tanpa perlu kirim email.
 
 ## Bug/Security (siap dikerjakan, tinggal approve prioritas)
 

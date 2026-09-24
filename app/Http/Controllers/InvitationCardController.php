@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\BuildInvitationEmailPdfAction;
 use App\Enums\AccessStatus;
 use App\Models\Event;
 use App\Models\EventParticipant;
@@ -118,6 +119,31 @@ class InvitationCardController extends Controller
         $filename = "undangan-{$slug}.pdf";
 
         return response($pdf->Output('S'))
+            ->header('Content-Type', 'application/pdf')
+            ->header('Content-Disposition', "inline; filename=\"{$filename}\"");
+    }
+
+    /**
+     * Individual print with the event's static info PDF merged in — same PDF
+     * that gets emailed via SendInvitationCardEmailJob, but downloadable
+     * directly for manual print (no email round-trip needed).
+     */
+    public function printWithAttachment(Event $event, EventParticipant $eventParticipant, BuildInvitationEmailPdfAction $builder): Response
+    {
+        abort_if($eventParticipant->event_id !== $event->id, 404);
+
+        $invitation = $eventParticipant->invitation;
+
+        abort_if(! $invitation?->token, 404);
+        abort_if($invitation->isRevoked(), 404);
+
+        $eventParticipant->setRelation('event', $event);
+        $pdfBinary = $builder->execute($eventParticipant);
+
+        $slug = str($eventParticipant->participant->name)->slug();
+        $filename = "undangan-{$slug}-lampiran.pdf";
+
+        return response($pdfBinary)
             ->header('Content-Type', 'application/pdf')
             ->header('Content-Disposition', "inline; filename=\"{$filename}\"");
     }

@@ -19,6 +19,36 @@ services:
       - ./database:/var/www/html/database
       - ./bootstrap:/var/www/html/bootstrap
 
+  # Queue worker — proses job async (mis. SendInvitationCardEmailJob).
+  # Image sama dengan service `php`, cuma command-nya beda.
+  # --max-time=3600: worker auto-restart tiap jam, biar ambil kode baru
+  # setelah deploy (queue:work cache aplikasi di memory, gak auto-reload).
+  queue:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+      target: production
+    container_name: checkin_queue
+    working_dir: /var/www/html
+    command: php artisan queue:work --tries=3 --backoff=30 --max-time=3600
+    restart: unless-stopped
+    networks:
+      - checkin_network
+    depends_on:
+      - mysql
+      - redis
+    volumes:
+      - ./.env:/var/www/html/.env
+      - ./docker/php/php.prod.ini:/usr/local/etc/php/conf.d/99-custom.ini
+      - storage_data:/var/www/html/storage
+      - ./public:/var/www/html/public
+      - ./app:/var/www/html/app
+      - ./resources:/var/www/html/resources
+      - ./routes:/var/www/html/routes
+      - ./config:/var/www/html/config
+      - ./database:/var/www/html/database
+      - ./bootstrap:/var/www/html/bootstrap
+
   nginx:
     ports:
       - "127.0.0.1:8082:80"

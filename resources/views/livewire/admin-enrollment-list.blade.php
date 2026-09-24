@@ -171,9 +171,9 @@
                     </td>
                     <td class="px-4 py-3">
                         @if($enrollment->invitation?->token)
-                            <a
-                                href="{{ route('admin.events.participants.qr', [$event, $enrollment]) }}"
-                                target="_blank"
+                            <button
+                                type="button"
+                                wire:click="viewQr({{ $enrollment->id }})"
                                 class="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
                             >
                                 <x-tabler-qrcode class="w-4 h-4" />
@@ -182,7 +182,7 @@
                                 @else
                                     Lihat QR
                                 @endif
-                            </a>
+                            </button>
                         @else
                             <span class="text-xs text-gray-400">—</span>
                         @endif
@@ -567,6 +567,67 @@
                     <span wire:loading wire:target="confirmEdit">Menyimpan...</span>
                 </x-ui.button>
             </div>
+        </div>
+    </div>
+
+    {{-- ── Lihat QR modal ───────────────────────────────────────────────── --}}
+    <div
+        x-data="{ show: $wire.entangle('showQrModal') }"
+        x-show="show"
+        x-transition:enter="transition ease-out duration-200"
+        x-transition:enter-start="opacity-0"
+        x-transition:enter-end="opacity-100"
+        x-transition:leave="transition ease-in duration-150"
+        x-transition:leave-start="opacity-100"
+        x-transition:leave-end="opacity-0"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+        @keydown.escape.window="$wire.closeQrModal()"
+        style="display: none"
+    >
+        <div
+            x-show="show"
+            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="opacity-0 scale-95"
+            x-transition:enter-end="opacity-100 scale-100"
+            x-transition:leave="transition ease-in duration-150"
+            x-transition:leave-start="opacity-100 scale-100"
+            x-transition:leave-end="opacity-0 scale-95"
+            class="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 w-full max-w-xs text-center"
+            @click.stop
+        >
+            @if($viewingQr)
+                <h3 class="text-base font-semibold text-gray-800 dark:text-white">
+                    {{ $viewingQr->participant->name }}
+                </h3>
+                <p class="mt-0.5 text-xs font-mono text-gray-400 dark:text-gray-500">
+                    {{ $viewingQr->invitation?->invitation_code ?? '—' }}
+                </p>
+
+                <div class="mx-auto mt-4 w-56 h-56 flex items-center justify-center rounded-lg border border-gray-200 dark:border-gray-700 bg-white p-3">
+                    <img
+                        src="{{ route('admin.events.participants.qr', [$event, $viewingQr]) }}"
+                        alt="QR {{ $viewingQr->participant->name }}"
+                        class="w-full h-full"
+                    />
+                </div>
+
+                @if($viewingQr->invitation?->isRevoked())
+                    <p class="mt-3 text-xs text-red-600 dark:text-red-400">
+                        QR ini sudah dicabut, tidak berlaku lagi.
+                    </p>
+                @endif
+
+                <div class="mt-5 flex items-center justify-center gap-2">
+                    <x-ui.button
+                        href="{{ route('admin.events.participants.qr', [$event, $viewingQr]) }}"
+                        download="qr-{{ str($viewingQr->participant->name)->slug() }}.svg"
+                    >
+                        <x-tabler-download class="w-4 h-4" />
+                        Download
+                    </x-ui.button>
+                    <x-ui.button wire:click="closeQrModal" variant="primary">Tutup</x-ui.button>
+                </div>
+            @endif
         </div>
     </div>
 </div>

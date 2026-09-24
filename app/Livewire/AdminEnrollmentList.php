@@ -67,6 +67,12 @@ class AdminEnrollmentList extends Component
 
     public string $editEmail = '';
 
+    // ── Lihat QR modal state ─────────────────────────────────────────────────
+
+    public bool $showQrModal = false;
+
+    public ?int $viewingQrEnrollmentId = null;
+
     public function mount(Event $event): void
     {
         $this->eventId = $event->id;
@@ -218,6 +224,20 @@ class AdminEnrollmentList extends Component
             ->where('access_status', AccessStatus::Allowed->value)
             ->whereHas('participant', fn ($q) => $q->whereNotNull('email'))
             ->whereHas('invitation', fn ($q) => $q->whereNotNull('token')->whereNull('revoked_at'));
+    }
+
+    // ── Lihat QR ──────────────────────────────────────────────────────────
+
+    public function viewQr(int $enrollmentId): void
+    {
+        $this->viewingQrEnrollmentId = $enrollmentId;
+        $this->showQrModal = true;
+    }
+
+    public function closeQrModal(): void
+    {
+        $this->showQrModal = false;
+        $this->viewingQrEnrollmentId = null;
     }
 
     // ── Disable ───────────────────────────────────────────────────────────
@@ -483,6 +503,10 @@ class AdminEnrollmentList extends Component
             ->latest()
             ->paginate(20);
 
-        return view('livewire.admin-enrollment-list', compact('event', 'enrollments'));
+        $viewingQr = $this->viewingQrEnrollmentId
+            ? EventParticipant::with(['participant', 'invitation'])->find($this->viewingQrEnrollmentId)
+            : null;
+
+        return view('livewire.admin-enrollment-list', compact('event', 'enrollments', 'viewingQr'));
     }
 }

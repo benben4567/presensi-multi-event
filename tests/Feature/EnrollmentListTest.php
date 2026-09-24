@@ -400,6 +400,36 @@ class EnrollmentListTest extends TestCase
         Queue::assertNotPushed(SendInvitationCardEmailJob::class);
     }
 
+    // ── Lihat QR modal ─────────────────────────────────────────────────────
+
+    #[Test]
+    public function view_qr_opens_modal_with_correct_participant(): void
+    {
+        $this->importCsv("nama,no_hp\nBudi Santoso,08123456789\n");
+        $enrollment = EventParticipant::first();
+
+        Livewire::actingAs($this->admin)
+            ->test(AdminEnrollmentList::class, ['event' => $this->event])
+            ->call('viewQr', $enrollment->id)
+            ->assertSet('showQrModal', true)
+            ->assertSet('viewingQrEnrollmentId', $enrollment->id)
+            ->assertSee('Budi Santoso');
+    }
+
+    #[Test]
+    public function close_qr_modal_resets_state(): void
+    {
+        $this->importCsv("nama,no_hp\nBudi Santoso,08123456789\n");
+        $enrollment = EventParticipant::first();
+
+        Livewire::actingAs($this->admin)
+            ->test(AdminEnrollmentList::class, ['event' => $this->event])
+            ->call('viewQr', $enrollment->id)
+            ->call('closeQrModal')
+            ->assertSet('showQrModal', false)
+            ->assertSet('viewingQrEnrollmentId', null);
+    }
+
     // ── Helper ─────────────────────────────────────────────────────────────
 
     private function importCsv(string $content): void

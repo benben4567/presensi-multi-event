@@ -27,6 +27,11 @@ services:
     image: presensi-qr-php
     container_name: checkin_queue
     working_dir: /var/www/html
+    # entrypoint kosong: skip config/route/view cache dari entrypoint.prod.sh.
+    # Worker gak serve HTTP jadi gak butuh cache itu — dan kalau ikut jalanin,
+    # dia race dengan service `php` nulis file cache yang sama (shared volume
+    # ./bootstrap) barengan pas start, bikin file cache-nya kepotong/corrupt.
+    entrypoint: []
     command: php artisan queue:work --tries=3 --backoff=30 --max-time=3600
     restart: unless-stopped
     networks:
@@ -34,6 +39,7 @@ services:
     depends_on:
       - mysql
       - redis
+      - php
     volumes:
       - ./.env:/var/www/html/.env
       - ./docker/php/php.prod.ini:/usr/local/etc/php/conf.d/99-custom.ini

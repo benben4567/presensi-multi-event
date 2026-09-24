@@ -225,7 +225,7 @@
                                 </button>
 
                                 {{-- Teleport ke <body> biar gak ke-clip overflow-x-auto tabel --}}
-                                <div x-teleport="body">
+                                <template x-teleport="body">
                                     <div
                                         x-show="open"
                                         @click.outside="if (!$refs.trigger.contains($event.target)) open = false"
@@ -307,7 +307,7 @@
                                             @endif
                                         </div>
                                     </div>
-                                </div>
+                                </template>
                             </div>
 
                         </div>

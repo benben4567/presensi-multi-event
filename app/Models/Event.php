@@ -79,4 +79,9 @@ class Event extends Model
 
         return $this->override_until !== null && $now->lessThanOrEqualTo($this->override_until);
     }
+
+    public function canAcceptAttendance(): bool
+    {
+        return $this->status === EventStatus::Open && $this->isAttendanceOpen();
+    }
 }

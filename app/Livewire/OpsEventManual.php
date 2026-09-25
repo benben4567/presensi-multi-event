@@ -113,6 +113,7 @@ class OpsEventManual extends Component
     {
         $event = Event::with('sessions')->findOrFail($this->eventId);
         $session = $this->sessionId ? EventSession::find($this->sessionId) : null;
+        $canScan = $event->canAcceptAttendance();
 
         $enrollments = collect();
 
@@ -151,6 +152,7 @@ class OpsEventManual extends Component
         return view('livewire.ops-event-manual', compact(
             'event',
             'session',
+            'canScan',
             'enrollments',
             'selectedEnrollment',
             'existingCheckIn',

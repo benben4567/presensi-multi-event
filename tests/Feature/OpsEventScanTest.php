@@ -179,4 +179,37 @@ class OpsEventScanTest extends TestCase
             ->assertSet('resultOutcome', null)
             ->assertSet('resultMessage', '');
     }
+
+    // ── Event not open ─────────────────────────────────────────────────────
+
+    #[Test]
+    public function closed_event_shows_blocking_message_instead_of_scan_ui(): void
+    {
+        $event = Event::factory()->closed()->create([
+            'start_at' => now()->subDays(5),
+            'end_at' => now()->subDay(),
+        ]);
+        EventSession::factory()->for($event)->create();
+
+        Livewire::actingAs($this->operator)
+            ->test(OpsEventScan::class, ['event' => $event])
+            ->assertSee('Event ini sudah selesai atau belum dibuka')
+            ->assertDontSee('Arahkan QR ke scanner');
+    }
+
+    #[Test]
+    public function draft_event_shows_blocking_message_instead_of_scan_ui(): void
+    {
+        $event = Event::factory()->create([
+            'status' => \App\Enums\EventStatus::Draft,
+            'start_at' => now()->addDay(),
+            'end_at' => now()->addDays(3),
+        ]);
+        EventSession::factory()->for($event)->create();
+
+        Livewire::actingAs($this->operator)
+            ->test(OpsEventScan::class, ['event' => $event])
+            ->assertSee('Event ini sudah selesai atau belum dibuka')
+            ->assertDontSee('Arahkan QR ke scanner');
+    }
 }

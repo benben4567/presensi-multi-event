@@ -11,6 +11,14 @@
     }"
     x-init="initDevice()"
 >
+    @if(! $canScan)
+        {{-- Event not open for attendance — block manual recording entirely --}}
+        <div class="rounded-xl border-2 border-dashed border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/20 p-10 text-center">
+            <x-tabler-circle-x class="w-16 h-16 text-red-400 dark:text-red-500 mx-auto mb-3" />
+            <p class="text-base font-medium text-gray-700 dark:text-gray-200">Event tidak aktif</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Event ini sudah selesai atau belum dibuka. Presensi tidak dapat dilakukan.</p>
+        </div>
+    @else
     {{-- Session selector (only shown when event has multiple sessions) --}}
     @if($event->sessions->count() > 1)
         <div class="mb-5">
@@ -19,7 +27,7 @@
             </label>
             <select
                 wire:model.live="sessionId"
-                class="w-full sm:w-72 px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                class="w-full sm:w-80 h-14 px-4 text-base border border-gray-300 rounded-lg bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
                 <option value="">— Pilih sesi —</option>
                 @foreach($event->sessions as $s)
@@ -31,9 +39,11 @@
 
     @if(! $sessionId)
         {{-- No session selected --}}
-        <x-ui.alert type="warning">
-            Pilih sesi terlebih dahulu sebelum mencatat presensi.
-        </x-ui.alert>
+        <div class="rounded-xl border-2 border-dashed border-yellow-300 dark:border-yellow-700 bg-yellow-50 dark:bg-yellow-900/20 p-10 text-center">
+            <x-tabler-alert-triangle class="w-16 h-16 text-yellow-400 dark:text-yellow-500 mx-auto mb-3" />
+            <p class="text-base font-medium text-gray-700 dark:text-gray-200">Belum ada sesi dipilih</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Pilih sesi aktif di atas sebelum mencatat presensi.</p>
+        </div>
     @else
         {{-- Result banner --}}
         @if($resultOutcome)
@@ -191,5 +201,6 @@
                 </p>
             @endif
         @endif
+    @endif
     @endif
 </div>

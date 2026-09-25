@@ -105,8 +105,9 @@ class OpsEventScan extends Component
     {
         $event = Event::with('sessions')->findOrFail($this->eventId);
         $session = $this->sessionId ? EventSession::find($this->sessionId) : null;
+        $canScan = $event->canAcceptAttendance();
 
-        return view('livewire.ops-event-scan', compact('event', 'session'))
+        return view('livewire.ops-event-scan', compact('event', 'session', 'canScan'))
             ->layout('layouts.ops', [
                 'title' => 'Scan QR',
                 'eventName' => $event->name,

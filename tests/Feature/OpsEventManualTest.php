@@ -238,4 +238,21 @@ class OpsEventManualTest extends TestCase
             ->call('submitManual')
             ->assertHasErrors(['manualNote']);
     }
+
+    // ── Event not open ─────────────────────────────────────────────────────
+
+    #[Test]
+    public function closed_event_shows_blocking_message_instead_of_manual_ui(): void
+    {
+        $event = Event::factory()->closed()->create([
+            'start_at' => now()->subDays(5),
+            'end_at' => now()->subDay(),
+        ]);
+        EventSession::factory()->for($event)->create();
+
+        Livewire::actingAs($this->operator)
+            ->test(OpsEventManual::class, ['event' => $event])
+            ->assertSee('Event ini sudah selesai atau belum dibuka')
+            ->assertDontSee('Cari nama atau nomor HP peserta');
+    }
 }
